@@ -47,6 +47,8 @@ int main()
     int n;
     string msgToChat;
 
+    std::vector<string> vec_cadena;
+
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
     {
         perror("socket creation failed");
@@ -66,7 +68,8 @@ int main()
     }
 
     len = sizeof(cliaddr);
-    RDT::PreparacionMensaje("ho",1);
+    vec_cadena = RDT::PreparacionMensaje("MensajeRarisimoHola", secuencia_udp, flujo); //Prueba
+    cout << vec_cadena[0]; //Prueba
 
     for(;;)
     {
@@ -74,14 +77,14 @@ int main()
                                 MSG_WAITALL, ( struct sockaddr *) &cliaddr,
                                 &len);
         buffer[n] = '\0';
-        cout << "Client : %s\n" << buffer;
+        cout << "\nClient : %s\n" << buffer;
         //cout << "add" << cliaddr.sin_addr.s_addr;
         cout << "\nType Something (q or Q to quit):";
         getline(cin, msgToChat);
         sendto(sockfd, msgToChat.c_str(), msgToChat.length(),
             MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
              len);
-        cout << "Hello message sent.\n";
+        cout << "\nHello message sent.\n";
 
     }
     
