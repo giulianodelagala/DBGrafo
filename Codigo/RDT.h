@@ -8,13 +8,15 @@ using std::string;
 class RDT
 {
 public:
-    static const int pos_secuencia = 5;
-    static const int pos_flujo = 3;
-    static const int pos_sec_en_flujo = 2;
+    static const int pos_secuencia = 5; //primeros 5 bytes capa transporte
+    static const int pos_flujo = 3;  //primeros 3 bytes capa aplicacion
+    static const int pos_sec_en_flujo = 2; //secuencia dentro de flujo
     static const int divisor = 10; //para generación de checksum
 
     static void PreparacionMensaje(string mensaje, unsigned int max_size_msg );
     static string PadZeros(int number, int longitud);
+    static int GenChecksum(string cadena);
+    static bool VerificaChecksum(string cadena)
     
 };
 
