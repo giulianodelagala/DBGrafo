@@ -15,14 +15,18 @@
 #include <iostream>
 #include <string>
 
+#include "RDT.h"
+
 #define PORT    8080
 #define MAXLINE 512
 
 using std::cout; using std::cin;
 using std::string;
 
+unsigned int sec_udp_in, sec_udp_out; //Numero de secuencia UDP entrada/salida
+unsigned int flujo_in, flujo_out;  //Numero de flujo entrada/salida
 
-
+RDT Rdt;
 
 int main()
 {
@@ -30,6 +34,7 @@ int main()
     char buffer[MAXLINE];
     struct sockaddr_in  servaddr;
     struct hostent *host;
+    
     
     host = (struct hostent *)gethostbyname((char *)"127.0.0.1");
 
@@ -58,6 +63,7 @@ int main()
 
         //if ((strcmp(msgToChat, "q") == 0) || strcmp(msgToChat, "Q") == 0)
         //break;
+        //Enviar nombre de archivo a transmitir
 
         sendto(sockfd, msgToChat.c_str() , msgToChat.length(),
                 MSG_CONFIRM, (const struct sockaddr *) &servaddr,
@@ -65,12 +71,35 @@ int main()
 
         cout << "Hello message sent.\n";
 
+        //Recibir el total de paquetes a recibir
         n = recvfrom(sockfd, (char *)buffer, MAXLINE,
                                 MSG_WAITALL, (struct sockaddr *) &servaddr,
                                 &len);
         cout << "n" << n;
-        buffer[n] = '\0';
-        printf("Server : %s\n", buffer);
+        int sec_fin;
+        //Creamos Flujo con numero de paquetes
+        //TODO Modificar sec_inicial
+        //TODO crearlo como puntero
+        Flujo Archivo(0, sec_fin, 0);
+
+        //Mientras no recibamos la totalidad de paquetes
+        while ( ! Archivo.IsCompleto())
+        {
+            n = recvfrom(sockfd, (char *)buffer, MAXLINE,
+                                MSG_WAITALL, (struct sockaddr *) &servaddr,
+                                &len);
+
+            Package* paquete = new Package(string(buffer));
+            if ( ! Archivo.InsertarPackage(paquete))
+                //Si no fue insertado -> Destruir paquete
+                delete paquete;            
+        }
+        //RecuperarMensaje
+        string mensaje = Archivo.ExtraerMensaje();
+        //TODO Convertir Mensaje a Archivo
+        
+        //buffer[n] = '\0';
+        //printf("Server : %s\n", buffer);
 
     }
 
