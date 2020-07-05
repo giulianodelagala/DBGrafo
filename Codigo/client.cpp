@@ -23,19 +23,87 @@
 using std::cout; using std::cin;
 using std::string;
 
-unsigned int sec_udp_in, sec_udp_out; //Numero de secuencia UDP entrada/salida
-unsigned int flujo_in, flujo_out;  //Numero de flujo entrada/salida
+//Variables de Red
+int sockfd;
+char buffer[MAXLINE];
+struct sockaddr_in  servaddr;
+socklen_t len;
+///////////////////
 
 RDT Rdt;
 
+void EnviarPaquete(string cadena);
+
+void EnviarMensaje(string mensaje)
+{
+    int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
+    Rdt.PreparacionMensaje(mensaje);
+    int secuencia_fin = Rdt.SECUENCIA_OUT_ACTUAL; //Número actual luego de creacion datagram
+
+    for (int sec= secuencia_ini; sec < secuencia_fin; ++sec)
+    {
+        EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec));
+    }
+}
+
+void EnviarPaquete(string cadena)
+{
+    sendto(sockfd, cadena.c_str(), cadena.length(),
+            MSG_CONFIRM, (const struct sockaddr *) &servaddr,
+             sizeof(servaddr));
+        cout << "\nPaquete enviado";
+}
+
+string EsperaPorMensaje()
+{
+    bool completo = false;
+    unsigned int flujo_actual;
+    int n;
+    string mensaje_in = "";
+
+    while (!completo)
+    {
+        n = recvfrom(sockfd, (char *)buffer, MAXLINE,
+                                MSG_WAITALL, (struct sockaddr *) &servaddr,
+                                &len);
+        if (Rdt.RecepcionPaquete(string(buffer)) )
+        {
+            cout << "\nPaquete Recibido";
+        }
+        //Verificar si tenemos mensaje completo
+        flujo_actual = Rdt.cola_flujos_in.front();
+        if (Rdt.VEC_FLUJOS_IN->at(flujo_actual)->IsCompleto())
+        {
+            mensaje_in = Rdt.VEC_FLUJOS_IN->at(flujo_actual)->ExtraerMensaje();
+            //Eliminar flujo
+            delete Rdt.VEC_FLUJOS_IN->at(flujo_actual);
+            Rdt.VEC_FLUJOS_IN->at(flujo_actual) = nullptr;
+            Rdt.cola_flujos_in.pop();
+            completo = true;
+        }
+    }
+    return mensaje_in;
+}
+
 int main()
 {
-    int sockfd;
-    char buffer[MAXLINE];
-    struct sockaddr_in  servaddr;
+    //int sockfd;
+    //char buffer[MAXLINE];
+    //struct sockaddr_in  servaddr;
+    
     struct hostent *host;
+
+    bool completo = false;
+    unsigned int flujo_actual = -1;
+    string mensaje_in = "", mensaje_out = "";
+
+    string comando;
     
-    
+
+    std::map<string, int> com = {
+        {"AR", 1} //Envio de Archivo
+    };
+ 
     host = (struct hostent *)gethostbyname((char *)"127.0.0.1");
 
     // Creating socket file descriptor
@@ -52,50 +120,72 @@ int main()
     servaddr.sin_addr = *((struct in_addr *)host->h_addr);
     //servaddr.sin_addr.s_addr = INADDR_ANY;
 
-    string msgToChat;
     int n;
-    socklen_t len;
+    //socklen_t len;
     
     for (;;)
     {
-        cout << "\nType Something (q or Q to quit):";
-        getline(cin, msgToChat);
+        //TODO MEJORAR ENVIOS
+        cout << "\nNombre Archivo";
+        getline(cin, mensaje_out);
 
-        //if ((strcmp(msgToChat, "q") == 0) || strcmp(msgToChat, "Q") == 0)
-        //break;
         //Enviar nombre de archivo a transmitir
+        EnviarMensaje("AR"+mensaje_out);
+        //sendto(sockfd, mensaje_out.c_str() , mensaje_out.length(),
+        //        MSG_CONFIRM, (const struct sockaddr *) &servaddr,
+         //               sizeof(servaddr));
 
-        sendto(sockfd, msgToChat.c_str() , msgToChat.length(),
-                MSG_CONFIRM, (const struct sockaddr *) &servaddr,
-                        sizeof(servaddr));
+        //cout << "\nMensaje Enviado";
 
-        cout << "Hello message sent.\n";
-
-        //Recibir el total de paquetes a recibir
-        n = recvfrom(sockfd, (char *)buffer, MAXLINE,
-                                MSG_WAITALL, (struct sockaddr *) &servaddr,
-                                &len);
-        cout << "n" << n;
-        int sec_fin;
-        //Creamos Flujo con numero de paquetes
-        //TODO Modificar sec_inicial
-        //TODO crearlo como puntero
-        Flujo Archivo(0, sec_fin, 0);
-
-        //Mientras no recibamos la totalidad de paquetes
-        while ( ! Archivo.IsCompleto())
+        //Espera de mensaje
+        mensaje_in = EsperaPorMensaje();
+        /*
+        while (!completo)
         {
             n = recvfrom(sockfd, (char *)buffer, MAXLINE,
                                 MSG_WAITALL, (struct sockaddr *) &servaddr,
                                 &len);
-
-            Package* paquete = new Package(string(buffer));
-            if ( ! Archivo.InsertarPackage(paquete))
-                //Si no fue insertado -> Destruir paquete
-                delete paquete;            
+            if (Rdt.RecepcionPaquete(string(buffer)) )
+            {
+                cout << "\nPaquete Recibido";
+            }
+            //Verificar si tenemos mensaje completo
+            flujo_actual = Rdt.cola_flujos_in.front();
+            if (Rdt.vec_flujos->at(flujo_actual)->IsCompleto())
+            {
+                mensaje_in = Rdt.vec_flujos->at(flujo_actual)->ExtraerMensaje();
+                //Eliminar flujo
+                delete Rdt.vec_flujos->at(flujo_actual);
+                Rdt.vec_flujos->at(flujo_actual) = nullptr;
+                Rdt.cola_flujos_in.pop();
+                completo = true;
+            }
         }
-        //RecuperarMensaje
-        string mensaje = Archivo.ExtraerMensaje();
+        */
+
+        //Procesar mensaje payload
+        //Extraccion de comando
+        comando = mensaje_in.substr(0,2);
+        
+        switch (com[comando])
+        {
+        case 1: //AR 
+        {
+            EnviarMensaje("OK");
+            mensaje_in = EsperaPorMensaje();
+            cout << "\nMensaje Recibido:" << mensaje_in;
+            break;
+        }
+            
+        
+        default:
+            break;
+        }
+
+      
+       
+        
+        
         //TODO Convertir Mensaje a Archivo
         
         //buffer[n] = '\0';

@@ -4,10 +4,14 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <queue>
+#include <math.h>
 
 #include <fstream>
 
-using std::string;
+using std::string; using std::cout;
+using std::queue;
+using std::vector;
 
 class RDT;
 
@@ -68,20 +72,25 @@ struct Package
 
 struct Flujo
 {
-  unsigned int sec_ini;
-  unsigned int sec_fin;
-  unsigned int flujo;
-  unsigned int contador = 0;
+  //unsigned int sec_ini;
+  unsigned int sec_fin = -1;
+  unsigned int num_flujo = -1;
+  unsigned int contador = -1;
 
   std::map<int, Package*> map_paquetes;
+
+  Flujo(unsigned int num_flujo)
+  {
+    this->num_flujo = num_flujo;
+  }
 
   Flujo(unsigned int sec_ini,
   unsigned int sec_fin,
   unsigned int flujo)
   {
-    this->sec_ini;
+    //this->sec_ini;
     this->sec_fin;
-    this->flujo;
+    this->num_flujo;
   }
 
   ~Flujo()
@@ -94,7 +103,7 @@ struct Flujo
 
   bool InsertarPackage(Package* paquete)
   {
-    if (paquete->flujo != flujo)
+    if (paquete->flujo != num_flujo)
       return false;
     else
     {
@@ -107,6 +116,11 @@ struct Flujo
       {
         map_paquetes[paquete->sec_flujo] = paquete;
         contador++;
+        //Actualizar atributos de Flujo
+        if (paquete->flag == 1)
+        { //Paquete final de flujo
+          this->sec_fin = paquete->sec_flujo;
+        }
         return true;
       }
     }
@@ -139,35 +153,35 @@ struct Flujo
 class RDT
 {
 public:
-/*
-    static const int ind_secuencia = 0; //indice secuencia
-    static const int pos_secuencia = 5; //primeros 5 bytes capa transporte
-    
-    static const int ind_flujo = 5; //indice flujo
-    static const int pos_flujo = 3;  //primeros 3 bytes capa aplicacion
-    
-    static const int ind_sec_flujo = 8; //indice de pos_sec_flujo
-    static const int pos_sec_en_flujo = 2; //secuencia dentro de flujo
-    
-    static const int ind_flag = 10; //indice flag
-    static const int pos_flag = 1; //secuencia dentro de flujo
+  //unsigned int FLUJO_IN_ACTUAL = -1; // Flujo de ingreso actual a procesar
+  //unsigned int FLUJO_OUT_ACTUAL = -1;  
+  const unsigned int MAX_FLUJOS = 999;
+  const unsigned int MAX_SECUENCIAS = 99999;
 
-    static const int ind_payload = 11; //indice payload
+  vector<string>* VEC_SECUENCIAS_OUT;
+  vector<Flujo*>* VEC_FLUJOS_OUT;
 
-    static const int divisor = 10; //para generación de checksum
-    static const int max_size_msg = 500;
-*/
-    std::map<int,string> map_secuencias;
+  vector<Flujo*>* VEC_FLUJOS_IN;
 
-    std::vector<string> PreparacionMensaje(string mensaje,
-      unsigned int &secuencia, unsigned int flujo );
-    string PadZeros(int number, int longitud);
-    int GenChecksum(string cadena);
-    bool VerificaChecksum(string cadena);
-    string File2String (string filename);
+  queue<int> cola_flujos_in;
 
-    //bool RecepcionPaquete(string Paquete, Package* package); //Recibe un paquete y devuelve si es final de flujo
-    
+  unsigned int SECUENCIA_OUT_ACTUAL = 0; 
+  unsigned int FLUJO_OUT_ACTUAL = 0; //Numero de flujo salida
+
+  string PadZeros(int number, int longitud);
+  int GenChecksum(string cadena);
+  bool VerificaChecksum(string cadena);
+
+  void PreparacionMensaje(string mensaje);
+  bool RecepcionPaquete(string Paquete);
+  
+  RDT()
+  {
+    VEC_FLUJOS_OUT = new vector<Flujo*>(MAX_FLUJOS,nullptr);
+    VEC_SECUENCIAS_OUT = new vector<string>(MAX_SECUENCIAS,"");
+
+    VEC_FLUJOS_IN = new vector<Flujo*>(MAX_FLUJOS,nullptr);
+  }
 };
 
 string RDT::PadZeros(int number, int longitud)
@@ -185,66 +199,65 @@ int RDT::GenChecksum(string cadena)
 }
 
 
-std::vector<string> RDT::PreparacionMensaje(string mensaje,
- unsigned int &secuencia, unsigned int flujo)
+void RDT::PreparacionMensaje(string mensaje)
 {
-  //unsigned int sec_flujo = 0; //secuencia en flujo
   string flag_fin = "0";
-  std::vector<string> vec_cadena;
+  std::vector<string> vec_paquete;
+ 
+  int num_secuencias = ceil ( mensaje.length() / (float) CT::max_size_msg);
 
   // i es secuencia en flujo
-  for (int i = 0; i < mensaje.length(); i+=CT::max_size_msg)
+  for (int i = 0; i < num_secuencias; ++i)
   {
+    if (i == num_secuencias -1 )
+      flag_fin = "1";
+
     string cadena = "";
-    string temp = mensaje.substr(i, CT::max_size_msg);
+    string temp = mensaje.substr(i*CT::max_size_msg, CT::max_size_msg);
     
-    cadena += PadZeros(secuencia, CT::pos_secuencia) +
-              PadZeros(flujo, CT::pos_flujo) +
+    cadena += PadZeros(SECUENCIA_OUT_ACTUAL, CT::pos_secuencia) +
+              PadZeros(FLUJO_OUT_ACTUAL, CT::pos_flujo) +
               PadZeros(i, CT::pos_sec_en_flujo) +
               flag_fin +
               temp;
     cadena += std::to_string(GenChecksum(cadena));
-    //Agregar la cadena a un map para su uso posterior
-    //TODO Eliminar el vector y 
+    //Agregar al vector de secuencias de salida para posible uso posterior
     //llevar control de numero secuencia inicial y final 
-    //para recuperar cadena desde map
-    map_secuencias[secuencia] = cadena;
-    vec_cadena.push_back(cadena);
-    secuencia++;
+    VEC_SECUENCIAS_OUT->at(SECUENCIA_OUT_ACTUAL) = cadena;
+    vec_paquete.push_back(cadena);
+    SECUENCIA_OUT_ACTUAL++;
   }
-  return vec_cadena;
+  FLUJO_OUT_ACTUAL++;
+  //return vec_paquete;
 }
-/*
-bool RDT::RecepcionPaquete(string paquete, Package* package)
+
+bool RDT::RecepcionPaquete(string mensaje)
 {
   //TODO Verificar Checksum
-  bool flag = true;
-  package->secuence = stoi(paquete.substr(0, pos_secuencia));
-  package->flujo = stoi(paquete.substr(pos_secuencia, pos_flujo));
-  package->sec_flujo = stoi(paquete.substr(ind_sec_flujo, pos_sec_en_flujo));
-  package->payload = paquete.substr(ind_sec_flujo+pos_sec_en_flujo);
-  package->payload = package->payload.substr(0,package->payload.length()-1);
-  return flag;
-}
-*/
-
-string RDT::File2String (string filename)
-{
-  std::streampos size;
-  char* memblock; //bloque de memoria donde se albergara file
-
-  std::ifstream file(filename, std::ios::in|std::ios::binary|std::ios::ate);
-  if (file.is_open())
+  //Crear Paquete
+  Package* pkg = new Package (mensaje);
+  Flujo* flujo = VEC_FLUJOS_IN->at(pkg->flujo);
+  //Verificar si el flujo existe
+  if ( flujo == nullptr)
   {
-    size = file.tellg();
-    memblock = new char[size];
-    file.seekg(0, std::ios::beg);
-    file.read (memblock, size);
-    file.close();
-    string filecadena(memblock);
-    delete[] memblock;
-    return filecadena;
+    //Flujo no existe : Crear Flujo
+    cout << "\nFlujo creado";
+    flujo = new Flujo(pkg->flujo);
+    VEC_FLUJOS_IN->at(pkg->flujo) = flujo;
+    cola_flujos_in.push(pkg->flujo);
+  }
+  
+  if (flujo->InsertarPackage(pkg))
+  {
+    cout << "\nPaquete Insertado Flujo:" << pkg->flujo << "Sec" << pkg->sec_flujo;
+    return true;
   }
   else
-    return "Error";
+  {
+    cout << "\nPaquete NO insertado Flujo:" << pkg->flujo << "Sec" << pkg->sec_flujo;
+    delete pkg;
+    return false;
+  }
 }
+
+

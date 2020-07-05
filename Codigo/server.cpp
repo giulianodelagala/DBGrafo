@@ -14,65 +14,111 @@
 //#include <ctime>
 
 #include <iostream>
+#include <sstream> //stringstream
 
 #include "RDT.h"
 
 #define PORT     8080
 #define MAXLINE 512
 
-
 using std::cout; using std::cin;
 using std::string;
 
-unsigned int secuencia_udp = 0; //Numero de secuencia UDP
-unsigned int flujo = 0;
+//Variables de Red
+struct sockaddr_in servaddr, cliaddr; 
+int sockfd; 
+char buffer[MAXLINE]; 
+unsigned int len;
+/////////////////
 
 RDT Rdt;
 
-void EnviarPaquete(string cadena, int sockfd,
-     sockaddr_in* cliaddr, unsigned int len);
+string File2String (string filename);
+string Txt2String (string filename);
+void EnviarPaquete(string cadena);
 
-void EnvioArchivo(string file_name, int sockfd,
-     sockaddr_in* cliaddr, unsigned int len)
+//TODO ELIMINAR NO ES NECESARIO PRIMERO GENERAR MENSAJE
+/*
+void EnvioArchivo(string file_name)
 {
-    int secuencia_ini = secuencia_udp;
-    string cadena_envio = Rdt.File2String(file_name);
-    std::vector<string> vec_envio = Rdt.PreparacionMensaje(cadena_envio,
-            secuencia_udp, flujo); //TODO Retirar Vector usar solo map
-    int secuencia_fin = secuencia_udp; //Número actual luego de creacion datagram
+    int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
+    string cadena_envio = File2String(file_name);
+    Rdt.PreparacionMensaje(cadena_envio);
+    int secuencia_fin = Rdt.SECUENCIA_OUT_ACTUAL; //Número actual luego de creacion datagram
 
     for (int sec= secuencia_ini; sec < secuencia_fin; ++sec)
     {
-        EnviarPaquete(Rdt.map_secuencias[sec], sockfd,
-        cliaddr, len);
+        EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec));
+    }
+}
+*/
+void EnviarMensaje(string mensaje)
+{
+    int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
+    Rdt.PreparacionMensaje(mensaje);
+    int secuencia_fin = Rdt.SECUENCIA_OUT_ACTUAL; //Número actual luego de creacion datagram
+
+    for (int sec= secuencia_ini; sec < secuencia_fin; ++sec)
+    {
+        EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec));
     }
 }
 
-void EnviarPaquete(string cadena, int sockfd,
-     sockaddr_in* cliaddr, unsigned int len)
+
+void EnviarPaquete(string cadena)
 {
     sendto(sockfd, cadena.c_str(), cadena.length(),
             MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
              len);
-        cout << "\nHello message sent.\n";
+        cout << "\nPaquete enviado";
+}
+
+string EsperaPorMensaje()
+{
+    bool completo = false;
+    unsigned int flujo_actual;
+    int n;
+    string mensaje_in = "";
+
+    while (!completo)
+    {
+        n = recvfrom(sockfd, (char *)buffer, MAXLINE,
+                              MSG_WAITALL, ( struct sockaddr *) &cliaddr,
+                            &len);
+
+        if (Rdt.RecepcionPaquete(string(buffer)) )
+        {
+            cout << "\nPaquete Recibido";
+        }
+        //Verificar si tenemos mensaje completo
+        flujo_actual = Rdt.cola_flujos_in.front();
+        if (Rdt.VEC_FLUJOS_IN->at(flujo_actual)->IsCompleto())
+        {
+            mensaje_in = Rdt.VEC_FLUJOS_IN->at(flujo_actual)->ExtraerMensaje();
+            //Eliminar flujo
+            delete Rdt.VEC_FLUJOS_IN->at(flujo_actual);
+            Rdt.VEC_FLUJOS_IN->at(flujo_actual) = nullptr;
+            Rdt.cola_flujos_in.pop();
+            completo = true;
+        }
+    }
+    return mensaje_in;
 }
 
 int main()
 {
-    struct sockaddr_in servaddr, cliaddr; 
-    int sockfd; 
-	char buffer[MAXLINE]; 
-	unsigned int len;
+    //struct sockaddr_in servaddr, cliaddr; 
+    //int sockfd; 
+	//char buffer[MAXLINE]; 
+	//unsigned int len;
     int n;
-    string msgToChat, comando;
+    string mensaje_in, comando;
 
     std::map<string, int> com = {
         {"AR", 1} //Envio de Archivo
     };
-    
-    
-
-    std::vector<string> vec_cadena;
+        
+    vector<string> vec_cadena;
 
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
     {
@@ -93,29 +139,36 @@ int main()
     }
 
     len = sizeof(cliaddr);
-    //vec_cadena = Rdt::PreparacionMensaje("MensajeRarisimoHola", secuencia_udp, flujo); //Prueba
-    //cout << vec_cadena[0]; //Prueba
-    string file_cadena = Rdt.File2String("lena.jpg");
-    cout << file_cadena;
+    
+    //string file_cadena = Rdt.File2String("lena.jpg");
+    //cout << file_cadena;
 
     for(;;)
     {
-        n = recvfrom(sockfd, (char *)buffer, MAXLINE,
-                                MSG_WAITALL, ( struct sockaddr *) &cliaddr,
-                                &len);
+        mensaje_in = EsperaPorMensaje();
+
+        //n = recvfrom(sockfd, (char *)buffer, MAXLINE,
+         //                       MSG_WAITALL, ( struct sockaddr *) &cliaddr,
+           //                     &len);
         //buffer[n] = '\0';
         //cout << "\nClient : %s\n" << buffer;
         //cout << "add" << cliaddr.sin_addr.s_addr;
-        string cadena(buffer);
-        comando = cadena.substr(0,2);
+        //string cadena(buffer);
+        comando = mensaje_in.substr(0,2);
 
         switch (com[comando])
         {
         case 1: //AR
         {
-            int size_name = stoi(cadena.substr(2,2));
-            string file_name = cadena.substr(5,size_name);
-            EnvioArchivo(file_name, sockfd, &cliaddr, len);
+            int size_name = stoi(mensaje_in.substr(2,2));
+            string file_name = mensaje_in.substr(4,size_name);
+            EnviarMensaje("AR");
+            if (EsperaPorMensaje().substr(0,2) == "OK")
+            {
+                string texto = Txt2String(file_name);
+                EnviarMensaje(texto);
+            }
+                
             break;
         }
             
@@ -134,4 +187,33 @@ int main()
     }
     
     return 0;
+}
+
+string File2String (string filename)
+{
+  std::streampos size;
+  char* memblock; //bloque de memoria donde se albergara file
+
+  std::ifstream file(filename, std::ios::in|std::ios::binary|std::ios::ate);
+  if (file.is_open())
+  {
+    size = file.tellg();
+    memblock = new char[size];
+    file.seekg(0, std::ios::beg);
+    file.read (memblock, size);
+    file.close();
+    string filecadena(memblock);
+    delete[] memblock;
+    return filecadena;
+  }
+  else
+    return "Error";
+}
+
+string Txt2String (string filename)
+{
+    std::ifstream t(filename);
+    std::stringstream cadena;
+    cadena << t.rdbuf();
+    return cadena.str();
 }
