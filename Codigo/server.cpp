@@ -37,21 +37,6 @@ string File2String (string filename);
 string Txt2String (string filename);
 void EnviarPaquete(string cadena);
 
-//TODO ELIMINAR NO ES NECESARIO PRIMERO GENERAR MENSAJE
-/*
-void EnvioArchivo(string file_name)
-{
-    int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
-    string cadena_envio = File2String(file_name);
-    Rdt.PreparacionMensaje(cadena_envio);
-    int secuencia_fin = Rdt.SECUENCIA_OUT_ACTUAL; //Número actual luego de creacion datagram
-
-    for (int sec= secuencia_ini; sec < secuencia_fin; ++sec)
-    {
-        EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec));
-    }
-}
-*/
 void EnviarMensaje(string mensaje)
 {
     int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
@@ -107,10 +92,6 @@ string EsperaPorMensaje()
 
 int main()
 {
-    //struct sockaddr_in servaddr, cliaddr; 
-    //int sockfd; 
-	//char buffer[MAXLINE]; 
-	//unsigned int len;
     int n;
     string mensaje_in, comando;
 
@@ -139,21 +120,11 @@ int main()
     }
 
     len = sizeof(cliaddr);
-    
-    //string file_cadena = Rdt.File2String("lena.jpg");
-    //cout << file_cadena;
 
     for(;;)
     {
         mensaje_in = EsperaPorMensaje();
 
-        //n = recvfrom(sockfd, (char *)buffer, MAXLINE,
-         //                       MSG_WAITALL, ( struct sockaddr *) &cliaddr,
-           //                     &len);
-        //buffer[n] = '\0';
-        //cout << "\nClient : %s\n" << buffer;
-        //cout << "add" << cliaddr.sin_addr.s_addr;
-        //string cadena(buffer);
         comando = mensaje_in.substr(0,2);
 
         switch (com[comando])
@@ -171,18 +142,10 @@ int main()
                 
             break;
         }
-            
-        
+                    
         default:
             break;
         }
-
-        //cout << "\nType Something (q or Q to quit):";
-        //getline(cin, msgToChat);
-        //sendto(sockfd, msgToChat.c_str(), msgToChat.length(),
-        //    MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
-        //     len);
-        //cout << "\nHello message sent.\n";
 
     }
     

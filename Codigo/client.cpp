@@ -86,11 +86,7 @@ string EsperaPorMensaje()
 }
 
 int main()
-{
-    //int sockfd;
-    //char buffer[MAXLINE];
-    //struct sockaddr_in  servaddr;
-    
+{ 
     struct hostent *host;
 
     bool completo = false;
@@ -99,7 +95,6 @@ int main()
 
     string comando;
     
-
     std::map<string, int> com = {
         {"AR", 1} //Envio de Archivo
     };
@@ -121,48 +116,20 @@ int main()
     //servaddr.sin_addr.s_addr = INADDR_ANY;
 
     int n;
-    //socklen_t len;
     
     for (;;)
     {
-        //TODO MEJORAR ENVIOS
         cout << "\nNombre Archivo";
         getline(cin, mensaje_out);
 
         //Enviar nombre de archivo a transmitir
+        //Por ahora incluir numero de caracteres del nombre
+        //ejm: 09texto.txt
         EnviarMensaje("AR"+mensaje_out);
-        //sendto(sockfd, mensaje_out.c_str() , mensaje_out.length(),
-        //        MSG_CONFIRM, (const struct sockaddr *) &servaddr,
-         //               sizeof(servaddr));
-
-        //cout << "\nMensaje Enviado";
 
         //Espera de mensaje
         mensaje_in = EsperaPorMensaje();
-        /*
-        while (!completo)
-        {
-            n = recvfrom(sockfd, (char *)buffer, MAXLINE,
-                                MSG_WAITALL, (struct sockaddr *) &servaddr,
-                                &len);
-            if (Rdt.RecepcionPaquete(string(buffer)) )
-            {
-                cout << "\nPaquete Recibido";
-            }
-            //Verificar si tenemos mensaje completo
-            flujo_actual = Rdt.cola_flujos_in.front();
-            if (Rdt.vec_flujos->at(flujo_actual)->IsCompleto())
-            {
-                mensaje_in = Rdt.vec_flujos->at(flujo_actual)->ExtraerMensaje();
-                //Eliminar flujo
-                delete Rdt.vec_flujos->at(flujo_actual);
-                Rdt.vec_flujos->at(flujo_actual) = nullptr;
-                Rdt.cola_flujos_in.pop();
-                completo = true;
-            }
-        }
-        */
-
+    
         //Procesar mensaje payload
         //Extraccion de comando
         comando = mensaje_in.substr(0,2);
@@ -176,21 +143,10 @@ int main()
             cout << "\nMensaje Recibido:" << mensaje_in;
             break;
         }
-            
-        
+              
         default:
             break;
         }
-
-      
-       
-        
-        
-        //TODO Convertir Mensaje a Archivo
-        
-        //buffer[n] = '\0';
-        //printf("Server : %s\n", buffer);
-
     }
 
     close(sockfd);

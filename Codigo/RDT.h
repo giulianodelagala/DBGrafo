@@ -72,7 +72,6 @@ struct Package
 
 struct Flujo
 {
-  //unsigned int sec_ini;
   unsigned int sec_fin = -1;
   unsigned int num_flujo = -1;
   unsigned int contador = -1;
@@ -88,7 +87,6 @@ struct Flujo
   unsigned int sec_fin,
   unsigned int flujo)
   {
-    //this->sec_ini;
     this->sec_fin;
     this->num_flujo;
   }
@@ -153,8 +151,6 @@ struct Flujo
 class RDT
 {
 public:
-  //unsigned int FLUJO_IN_ACTUAL = -1; // Flujo de ingreso actual a procesar
-  //unsigned int FLUJO_OUT_ACTUAL = -1;  
   const unsigned int MAX_FLUJOS = 999;
   const unsigned int MAX_SECUENCIAS = 99999;
 
@@ -228,7 +224,6 @@ void RDT::PreparacionMensaje(string mensaje)
     SECUENCIA_OUT_ACTUAL++;
   }
   FLUJO_OUT_ACTUAL++;
-  //return vec_paquete;
 }
 
 bool RDT::RecepcionPaquete(string mensaje)
