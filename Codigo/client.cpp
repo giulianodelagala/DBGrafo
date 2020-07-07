@@ -97,7 +97,8 @@ int main()
     string comando;
     
     std::map<string, int> com = {
-        {"AR", 1} //Envio de Archivo
+        {"AR", 1}, //Envio de Archivo
+        {"AA", 98} //ACK
     };
  
     host = (struct hostent *)gethostbyname((char *)"127.0.0.1");
@@ -117,9 +118,17 @@ int main()
     //servaddr.sin_addr.s_addr = INADDR_ANY;
 
     int n;
+    cout << "\nNombre Archivo";
+        getline(cin, mensaje_out);
+
+        //Enviar nombre de archivo a transmitir
+        //Por ahora incluir numero de caracteres del nombre
+        //ejm: 09texto.txt
+        EnviarMensaje("AR"+mensaje_out);
     
     for (;;)
     {
+        /*
         cout << "\nNombre Archivo";
         getline(cin, mensaje_out);
 
@@ -127,7 +136,7 @@ int main()
         //Por ahora incluir numero de caracteres del nombre
         //ejm: 09texto.txt
         EnviarMensaje("AR"+mensaje_out);
-
+*/
         //Espera de mensaje
         mensaje_in = EsperaPorMensaje();
     
@@ -142,6 +151,11 @@ int main()
             EnviarMensaje("OK");
             mensaje_in = EsperaPorMensaje();
             cout << "\nMensaje Recibido:" << mensaje_in;
+            break;
+        }
+        case 98: //ACK
+        {
+            cout << "\nACK Recibido";
             break;
         }
               

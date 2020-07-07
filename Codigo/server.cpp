@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <sstream> //stringstream
+#include <thread>
 
 #include "RDT.h"
 
@@ -67,6 +68,7 @@ string EsperaPorMensaje()
 
     while (!completo)
     {
+        bzero(buffer, MAXLINE);
         n = recvfrom(sockfd, (char *)buffer, MAXLINE,
                               MSG_WAITALL, ( struct sockaddr *) &cliaddr,
                             &len);
@@ -74,6 +76,10 @@ string EsperaPorMensaje()
         if (Rdt.RecepcionPaquete(string(buffer)) )
         {
             cout << "\nPaquete Recibido";
+        }
+        else
+        {
+            return "XX"; //Error de Checksum
         }
         //Verificar si tenemos mensaje completo
         flujo_actual = Rdt.cola_flujos_in.front();
@@ -90,13 +96,24 @@ string EsperaPorMensaje()
     return mensaje_in;
 }
 
+
+void ACKTimeout()
+{
+    while (true)
+    {
+        sleep(5);
+        EnviarMensaje(Rdt.PrepararACK());
+    } 
+}
+
 int main()
 {
     int n;
     string mensaje_in, comando;
 
     std::map<string, int> com = {
-        {"AR", 1} //Envio de Archivo
+        {"AR", 1}, //Envio de Archivo
+        {"XX", 99} //Error de Checksum
     };
         
     vector<string> vec_cadena;
@@ -121,6 +138,8 @@ int main()
 
     len = sizeof(cliaddr);
 
+    std::thread(ACKTimeout).detach();
+
     for(;;)
     {
         mensaje_in = EsperaPorMensaje();
@@ -139,10 +158,19 @@ int main()
                 string texto = Txt2String(file_name);
                 EnviarMensaje(texto);
             }
-                
+            else
+            {
+                cout << "Error";
+            }
+                        
             break;
         }
-                    
+        case 99: //Error de Checksum
+        {
+            cout << "Error de Recepción Checksum";
+            break;
+        }
+
         default:
             break;
         }

@@ -33,7 +33,7 @@ public:
   static const int ind_payload = 11; //indice payload
 
   static const int divisor = 10; //para generación de checksum
-  static const int max_size_msg = 500;
+  static const int max_size_msg = 495;
 
 };
 
@@ -119,6 +119,7 @@ struct Flujo
         { //Paquete final de flujo
           this->sec_fin = paquete->sec_flujo;
         }
+        
         return true;
       }
     }
@@ -153,10 +154,12 @@ class RDT
 public:
   const unsigned int MAX_FLUJOS = 999;
   const unsigned int MAX_SECUENCIAS = 99999;
+  const unsigned int CONTROL_ACK = 100; //llevar control de ultimos 100 paquetes
 
   vector<string>* VEC_SECUENCIAS_OUT;
-  vector<Flujo*>* VEC_FLUJOS_OUT;
+  vector<bool>* VEC_SECUENCIAS_IN; //control 
 
+  vector<Flujo*>* VEC_FLUJOS_OUT;
   vector<Flujo*>* VEC_FLUJOS_IN;
 
   queue<int> cola_flujos_in;
@@ -164,12 +167,17 @@ public:
   unsigned int SECUENCIA_OUT_ACTUAL = 0; 
   unsigned int FLUJO_OUT_ACTUAL = 0; //Numero de flujo salida
 
+  //unsigned int SECUENCIA_ACK_ACTUAL = 100; //Enviar ack de los ultimos 100 paquetes
+  
+
   string PadZeros(int number, int longitud);
   int GenChecksum(string cadena);
-  bool VerificaChecksum(string cadena);
+  bool VerificarChecksum(string cadena);
 
   void PreparacionMensaje(string mensaje);
   bool RecepcionPaquete(string Paquete);
+
+  string PrepararACK(); //TODO
   
   RDT()
   {
@@ -177,6 +185,7 @@ public:
     VEC_SECUENCIAS_OUT = new vector<string>(MAX_SECUENCIAS,"");
 
     VEC_FLUJOS_IN = new vector<Flujo*>(MAX_FLUJOS,nullptr);
+    VEC_SECUENCIAS_IN = new vector<bool>(MAX_SECUENCIAS,false);
   }
 };
 
@@ -199,12 +208,12 @@ int RDT::GenChecksum(string cadena)
 	return suma;
 }
 
-bool RDT::VerificaChecksum(string cadena){
+bool RDT::VerificarChecksum(string cadena){
   int suma=0;
 	suma = GenChecksum(cadena);
-  string temp=cadena.substr(cadena.size()-1);
-  
-	if(suma == stoi(cadena.substr(cadena.size()-1)))
+  string temp=cadena.substr(cadena.length()-1);
+
+	if(suma == stoi(cadena.substr(cadena.length()-1)))
 		return true;
   else
 	  return false;
@@ -243,7 +252,16 @@ void RDT::PreparacionMensaje(string mensaje)
 
 bool RDT::RecepcionPaquete(string mensaje)
 {
-  //TODO Verificar Checksum
+  if (VerificarChecksum(mensaje))
+  {
+    cout << "\nPaquete Verificado Checksum";
+  }
+  else
+  {
+    cout << "Paquete Erroneo Checksum";
+    return false;
+  }
+  
   //Crear Paquete
   Package* pkg = new Package (mensaje);
   Flujo* flujo = VEC_FLUJOS_IN->at(pkg->flujo);
@@ -260,6 +278,7 @@ bool RDT::RecepcionPaquete(string mensaje)
   if (flujo->InsertarPackage(pkg))
   {
     cout << "\nPaquete Insertado Flujo:" << pkg->flujo << "Sec" << pkg->sec_flujo;
+    //VEC_SECUENCIAS_IN->at(pkg->secuence) = true; //Marcado como recibido correctamente 
     return true;
   }
   else
@@ -270,4 +289,8 @@ bool RDT::RecepcionPaquete(string mensaje)
   }
 }
 
+string RDT::PrepararACK()
+{
+  return "AA"; //Prueba de Envio ACK
+}
 
