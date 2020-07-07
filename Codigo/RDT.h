@@ -190,10 +190,25 @@ string RDT::PadZeros(int number, int longitud)
 }
 
 int RDT::GenChecksum(string cadena)
-{// TODO
-  return 0;
+{
+  int suma=0;
+	for (int i = 0; i < 6; i++){
+		suma+=int(cadena[i]);
+	}
+	suma=suma%CT::divisor;
+	return suma;
 }
 
+bool RDT::VerificaChecksum(string cadena){
+  int suma=0;
+	suma = GenChecksum(cadena);
+  string temp=cadena.substr(cadena.size()-1);
+  
+	if(suma == stoi(cadena.substr(cadena.size()-1)))
+		return true;
+  else
+	  return false;
+}
 
 void RDT::PreparacionMensaje(string mensaje)
 {

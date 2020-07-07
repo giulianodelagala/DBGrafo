@@ -63,6 +63,7 @@ string EsperaPorMensaje()
 
     while (!completo)
     {
+        bzero(buffer, MAXLINE);
         n = recvfrom(sockfd, (char *)buffer, MAXLINE,
                                 MSG_WAITALL, (struct sockaddr *) &servaddr,
                                 &len);
