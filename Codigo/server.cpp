@@ -71,6 +71,12 @@ void EnviarPaquete(string cadena)
         cout << "\nPaquete enviado";
 }
 */
+void EnviarArchivoTxt(string filename, sockaddr_in* cliente)
+{
+    string texto = Txt2String(filename);
+    EnviarMensaje (texto, cliente);
+    EnviarMensaje ("Fin de Archivo", cliente);
+}
 
 void EnviarPaquete(string cadena, sockaddr_in* cliente)
 {
@@ -188,8 +194,8 @@ int main()
                 sockaddr_in* cliente = new sockaddr_in();
                 *cliente = cliaddr;
                 
-                string texto = Txt2String(file_name);
-                std::thread(EnviarMensaje, texto, cliente).detach();
+                //string texto = Txt2String(file_name);
+                std::thread(EnviarArchivoTxt, file_name, cliente).detach();
                 
                 //EnviarMensaje(Rdt.PrepararACK(), cliente);
                 //EnviarMensaje(texto);
