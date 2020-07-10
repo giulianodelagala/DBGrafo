@@ -6,6 +6,7 @@
 #include <map>
 #include <queue>
 #include <math.h>
+#include <sys/types.h>
 
 #include <fstream>
 
@@ -21,19 +22,22 @@ public:
   static const int ind_secuencia = 0; //indice secuencia
   static const int pos_secuencia = 5; //primeros 5 bytes capa transporte
   
-  static const int ind_flujo = 5; //indice flujo
+  static const int ind_pid = 5; //indice process id
+  static const int pos_pid = 5; //5 bytes process id
+  
+  static const int ind_flujo = 10; //indice flujo
   static const int pos_flujo = 3;  //primeros 3 bytes capa aplicacion
   
-  static const int ind_sec_flujo = 8; //indice de pos_sec_flujo
+  static const int ind_sec_flujo = 13; //indice de pos_sec_flujo
   static const int pos_sec_en_flujo = 2; //secuencia dentro de flujo
   
-  static const int ind_flag = 10; //indice flag
+  static const int ind_flag = 15; //indice flag
   static const int pos_flag = 1; //secuencia dentro de flujo
 
-  static const int ind_payload = 11; //indice payload
+  static const int ind_payload = 16; //indice payload
 
   static const int divisor = 10; //para generación de checksum
-  static const int max_size_msg = 495;
+  static const int max_size_msg = 490;
 
 };
 
@@ -42,17 +46,20 @@ public:
 struct Package
 {
   unsigned int secuence;
+  unsigned int pid;
   unsigned int flujo;
   unsigned int sec_flujo;
   bool flag;
   string payload;
 
   Package(unsigned int secuence,
+  unsigned int pid,
   unsigned int flujo,
   unsigned int sec_flujo,
   string payload)
   {
     this->secuence = secuence;
+    this->pid = pid;
     this->flujo = flujo;
     this->sec_flujo = sec_flujo;
     this->payload = payload;
@@ -61,26 +68,29 @@ struct Package
   Package(string paquete)
   {
     this->secuence = stoi(paquete.substr(CT::ind_secuencia, CT::pos_secuencia));
+    this->pid = stoi(paquete.substr(CT::ind_pid, CT::pos_pid) );
     this->flujo = stoi(paquete.substr(CT::ind_flujo, CT::pos_flujo));
     this->sec_flujo = stoi(paquete.substr(CT::ind_sec_flujo, CT::pos_sec_en_flujo));
     this->flag = stoi(paquete.substr(CT::ind_flag, CT::pos_flag));
 
     this->payload = paquete.substr(CT::ind_payload);
-    this->payload = this->payload.substr(0,this->payload.length()-1); 
+    this->payload = this->payload.substr(0,this->payload.length()-1); //Retirar Checksum
   }
 };
 
 struct Flujo
 {
+  unsigned int pid = -1;
   unsigned int sec_fin = -1;
   unsigned int num_flujo = -1;
   unsigned int contador = -1;
 
   std::map<int, Package*> map_paquetes;
 
-  Flujo(unsigned int num_flujo)
+  Flujo(unsigned int num_flujo, unsigned int pid)
   {
     this->num_flujo = num_flujo;
+    this->pid = pid;
   }
 
   Flujo(unsigned int sec_ini,
@@ -173,6 +183,7 @@ public:
   string PadZeros(int number, int longitud);
   int GenChecksum(string cadena);
   bool VerificarChecksum(string cadena);
+  int GetPID();
 
   void PreparacionMensaje(string mensaje);
   bool RecepcionPaquete(string Paquete);
@@ -236,6 +247,7 @@ void RDT::PreparacionMensaje(string mensaje)
     string temp = mensaje.substr(i*CT::max_size_msg, CT::max_size_msg);
     
     cadena += PadZeros(SECUENCIA_OUT_ACTUAL, CT::pos_secuencia) +
+              PadZeros(GetPID(), CT::pos_pid) +
               PadZeros(FLUJO_OUT_ACTUAL, CT::pos_flujo) +
               PadZeros(i, CT::pos_sec_en_flujo) +
               flag_fin +
@@ -248,6 +260,11 @@ void RDT::PreparacionMensaje(string mensaje)
     SECUENCIA_OUT_ACTUAL++;
   }
   FLUJO_OUT_ACTUAL++;
+}
+
+int RDT::GetPID()
+{
+  return (int) gettid();
 }
 
 bool RDT::RecepcionPaquete(string mensaje)
@@ -270,20 +287,20 @@ bool RDT::RecepcionPaquete(string mensaje)
   {
     //Flujo no existe : Crear Flujo
     cout << "\nFlujo creado";
-    flujo = new Flujo(pkg->flujo);
+    flujo = new Flujo(pkg->flujo, pkg->pid);
     VEC_FLUJOS_IN->at(pkg->flujo) = flujo;
     cola_flujos_in.push(pkg->flujo);
   }
   
   if (flujo->InsertarPackage(pkg))
   {
-    cout << "\nPaquete Insertado Flujo:" << pkg->flujo << "Sec" << pkg->sec_flujo;
+    cout << "\nPkg Insert Flujo:" << pkg->flujo << " Sec " << pkg->sec_flujo << " PID: " << pkg->pid;
     //VEC_SECUENCIAS_IN->at(pkg->secuence) = true; //Marcado como recibido correctamente 
     return true;
   }
   else
   {
-    cout << "\nPaquete NO insertado Flujo:" << pkg->flujo << "Sec" << pkg->sec_flujo;
+    cout << "\nPkg NO insert Flujo:" << pkg->flujo << "Sec" << pkg->sec_flujo;
     delete pkg;
     return false;
   }

@@ -29,15 +29,15 @@ using std::string;
 struct sockaddr_in servaddr, cliaddr; 
 int sockfd; 
 char buffer[MAXLINE]; 
-unsigned int len;
+//unsigned int len;
 /////////////////
 
 RDT Rdt;
 
 string File2String (string filename);
 string Txt2String (string filename);
-void EnviarPaquete(string cadena);
-
+void EnviarPaquete(string cadena, sockaddr_in* cliente);
+/*
 void EnviarMensaje(string mensaje)
 {
     int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
@@ -49,12 +49,35 @@ void EnviarMensaje(string mensaje)
         EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec));
     }
 }
+*/
+void EnviarMensaje(string mensaje, sockaddr_in* cliente)
+{
+    int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
+    Rdt.PreparacionMensaje(mensaje);
+    int secuencia_fin = Rdt.SECUENCIA_OUT_ACTUAL; //Número actual luego de creacion datagram
 
+    for (int sec= secuencia_ini; sec < secuencia_fin; ++sec)
+    {
+        EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec), cliente);
+    } 
+}
 
+/*
 void EnviarPaquete(string cadena)
 {
     sendto(sockfd, cadena.c_str(), cadena.length(),
             MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
+             len);
+        cout << "\nPaquete enviado";
+}
+*/
+
+void EnviarPaquete(string cadena, sockaddr_in* cliente)
+{
+    unsigned int len;
+    len = sizeof(*cliente);
+    sendto(sockfd, cadena.c_str(), cadena.length(),
+            MSG_CONFIRM, (const struct sockaddr *) cliente,
              len);
         cout << "\nPaquete enviado";
 }
@@ -65,6 +88,8 @@ string EsperaPorMensaje()
     unsigned int flujo_actual;
     int n;
     string mensaje_in = "";
+    unsigned int len;
+    len = sizeof(cliaddr);
 
     while (!completo)
     {
@@ -97,6 +122,7 @@ string EsperaPorMensaje()
 }
 
 
+/*
 void ACKTimeout()
 {
     while (true)
@@ -105,7 +131,7 @@ void ACKTimeout()
         EnviarMensaje(Rdt.PrepararACK());
     } 
 }
-
+*/
 int main()
 {
     int n;
@@ -136,12 +162,13 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    len = sizeof(cliaddr);
+    //len = sizeof(cliaddr);
 
-    std::thread(ACKTimeout).detach();
+    //std::thread(ACKTimeout).detach();
 
     for(;;)
     {
+        cout << "En espera";
         mensaje_in = EsperaPorMensaje();
 
         comando = mensaje_in.substr(0,2);
@@ -152,11 +179,20 @@ int main()
         {
             int size_name = stoi(mensaje_in.substr(2,2));
             string file_name = mensaje_in.substr(4,size_name);
-            EnviarMensaje("AR");
+            
+            
+            EnviarMensaje("AR", &cliaddr);
             if (EsperaPorMensaje().substr(0,2) == "OK")
-            {
+            {   
+                // Crear Thread para envío de mensajes
+                sockaddr_in* cliente = new sockaddr_in();
+                *cliente = cliaddr;
+                
                 string texto = Txt2String(file_name);
-                EnviarMensaje(texto);
+                std::thread(EnviarMensaje, texto, cliente).detach();
+                
+                //EnviarMensaje(Rdt.PrepararACK(), cliente);
+                //EnviarMensaje(texto);
             }
             else
             {

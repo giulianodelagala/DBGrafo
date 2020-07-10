@@ -17,7 +17,7 @@
 
 #include "RDT.h"
 
-#define PORT    8080
+#define PORT    8080 //8080
 #define MAXLINE 512
 
 using std::cout; using std::cin;
@@ -101,7 +101,7 @@ int main()
         {"AA", 98} //ACK
     };
  
-    host = (struct hostent *)gethostbyname((char *)"127.0.0.1");
+    host = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
 
     // Creating socket file descriptor
     if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
