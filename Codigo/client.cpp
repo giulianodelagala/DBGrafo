@@ -16,6 +16,7 @@
 #include <string>
 
 #include "RDT.h"
+#include "manejo_archivos.h"
 
 #define PORT    8080 //8080
 #define MAXLINE 512
@@ -150,7 +151,8 @@ int main()
         {
             EnviarMensaje("OK");
             mensaje_in = EsperaPorMensaje();
-            cout << "\nMensaje Recibido:" << mensaje_in;
+            cout << "\nMensaje Recibido:"; // << mensaje_in;
+            String2Txt(mensaje_out, mensaje_in);
             break;
         }
         case 98: //ACK
@@ -167,3 +169,4 @@ int main()
     close(sockfd);
     return 0;
 }
+

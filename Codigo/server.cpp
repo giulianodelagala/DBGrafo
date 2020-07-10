@@ -18,6 +18,7 @@
 #include <thread>
 
 #include "RDT.h"
+#include "manejo_archivos.h"
 
 #define PORT     8080
 #define MAXLINE 512
@@ -34,8 +35,8 @@ char buffer[MAXLINE];
 
 RDT Rdt;
 
-string File2String (string filename);
-string Txt2String (string filename);
+//string File2String (string filename);
+//string Txt2String (string filename);
 void EnviarPaquete(string cadena, sockaddr_in* cliente);
 /*
 void EnviarMensaje(string mensaje)
@@ -221,7 +222,7 @@ int main()
     
     return 0;
 }
-
+/*
 string File2String (string filename)
 {
   std::streampos size;
@@ -250,3 +251,4 @@ string Txt2String (string filename)
     cadena << t.rdbuf();
     return cadena.str();
 }
+*/
