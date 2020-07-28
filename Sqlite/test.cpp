@@ -1,16 +1,39 @@
-#include <iostream>
-#include <string.h>
-//#include <sqlite3.h>
 #include "BD.h"
 
-using namespace std;
-
-
 int main()
-{
-    string response = "";
-    BD Test("test.db");
-    Test.execSELECT(response, "nodo2");
-    //cout << response;
+{ 
+    DB Sql;
+
+    /*
+    {
+        //exec(connDB,"update into nodo2 values(5,'alexander','pinto')");
+        //exec(connDB,"update nodo2 set dni='felix' where id = 3");
+        //exec(connDB,"delete from nodo2 where id = 5");
+        execSELECT(connDB,"Nodos", " id ", "nombre = 'Maria'");
+        execSELECT(connDB, "Nodos" );
+        //CrearNodo(connDB, "Jose");
+        //cout << SelectIdNodo(connDB, "Jose");
+    }
+    */
+
+    //Sql.execSELECT("Nodos", " id ", "nombre = 'Jose'");
+    //cout << Sql.GetID("Jose") << "\n";
+    //Sql.InsertAtributo("Alberto", "Direccion", "Calle Bolivar 14");
+    //Sql.InsertRelacion("Ana", "Alberto");
+    /*
+    vector<Atr> vec_atri;
+    vec_atri = Sql.ReadAtributosNodo("Alberto");
+
+    for (auto i: vec_atri)
+    {
+        cout << i.value;
+    }
+    */
+    vector<int> vec_friends;
+    vec_friends = Sql.GetIDFriends("Ana");
+    for (auto i: vec_friends)
+    {
+        cout << i;
+    }
     return 0;
 }
