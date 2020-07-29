@@ -29,11 +29,21 @@ int main()
         cout << i.value;
     }
     */
+   /*
     vector<int> vec_friends;
     vec_friends = Sql.GetIDFriends("Ana");
     for (auto i: vec_friends)
     {
         cout << i;
     }
+    */
+
+    //Sql.UpdateAtributo("Ana", "Edad", "20");
+
+    //Sql.DeleteNodo("Maria");
+    //Sql.DeleteAtributo("Alberto","Direccion");
+    Sql.DeleteRelacion ("Ana", "Jose");
+
     return 0;
+
 }

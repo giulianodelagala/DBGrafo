@@ -37,6 +37,11 @@ public:
     vector<Atr> ReadAtributosNodo(string nombre_nodo);
     vector<int> GetIDFriends(string nombre_nodo);
 
+    bool UpdateAtributo(string nombre_nodo, string atributo, string valor);
+
+    bool DeleteNodo(string nombre_nodo);
+    bool DeleteAtributo(string nombre_nodo, string atributo);
+    bool DeleteRelacion(string nombre_from, string nombre_to);
 
     DB()
     {
@@ -202,4 +207,53 @@ vector<int> DB::GetIDFriends(string nombre_nodo)
         cout << "Error execSelect: " << sqlite3_errmsg(connDB) << "\n";
     sqlite3_finalize(stmt);
     return vec_friends;
+}
+
+////////////////////////
+/// UPDATE ///////////
+////////////////////////
+
+bool DB::UpdateAtributo(string nombre_nodo, string atributo, string valor)
+{
+    string id_nodo = to_string(GetID(nombre_nodo));
+
+    string query = "UPDATE NODOATRIBUTOS SET VALOR = " + valor + " WHERE ID_NODO = " + id_nodo + " AND ATRIBUTO = \"" + atributo + "\"";
+    cout << query;
+
+    return exec(query.c_str()); 
+}
+
+////////////////////////
+/// DELETE ///////////
+////////////////////////
+
+bool DB::DeleteNodo(string nombre_nodo)
+{
+    //string id_nodo = to_string(GetID(nombre_nodo));
+
+    string query = "DELETE FROM NODOS WHERE NOMBRE = \"" + nombre_nodo + "\"";
+    cout << query;
+
+    return exec(query.c_str()); 
+}
+
+bool DB::DeleteAtributo(string nombre_nodo, string atributo)
+{
+    string id_nodo = to_string(GetID(nombre_nodo));
+
+    string query = "DELETE FROM NODOATRIBUTOS WHERE ID_NODO = " + id_nodo + " AND ATRIBUTO = \"" + atributo + "\"";
+    cout << query;
+
+    return exec(query.c_str()); 
+}
+
+bool DB::DeleteRelacion(string nombre_from, string nombre_to)
+{
+    string id_nodo_from = to_string(GetID(nombre_from));
+    string id_nodo_to = to_string(GetID(nombre_to));
+
+    string query = "DELETE FROM RELACION WHERE ID_NODO_FROM = " + id_nodo_from + " AND ID_NODO_TO = " + id_nodo_to;
+    cout << query;
+
+    return exec(query.c_str()); 
 }
