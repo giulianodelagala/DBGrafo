@@ -356,6 +356,7 @@ int main(int argc, char* argv[])
                         
             break;
         }
+        
         case 99: //Error de Checksum
         {
             cout << "Error de Recepción Checksum";

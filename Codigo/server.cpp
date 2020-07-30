@@ -79,7 +79,7 @@ void EnviarPaquete(string cadena, sockaddr_in* cliente)
         cout << "\nPaquete enviado";
 }
 
-string EsperaPorMensaje()
+string EsperaPorMensaje(int &pid)
 {
     bool completo = false;
     unsigned int flujo_actual;
@@ -105,14 +105,17 @@ string EsperaPorMensaje()
         }
         //Verificar si tenemos mensaje completo
         flujo_actual = Rdt.cola_flujos_in.front();
+        
         if (Rdt.VEC_FLUJOS_IN->at(flujo_actual)->IsCompleto())
         {
             mensaje_in = Rdt.VEC_FLUJOS_IN->at(flujo_actual)->ExtraerMensaje();
+            pid = Rdt.VEC_FLUJOS_IN->at(flujo_actual)->pid;
             //Eliminar flujo
             delete Rdt.VEC_FLUJOS_IN->at(flujo_actual);
             Rdt.VEC_FLUJOS_IN->at(flujo_actual) = nullptr;
             Rdt.cola_flujos_in.pop();
             completo = true;
+            
         }
     }
     return mensaje_in;
@@ -186,7 +189,9 @@ int main()
         {2, slaveaddr3}
     };
 
-    int n;
+    std::map<int,sockaddr_in> map_cliente;
+
+    int n, cliente_pid, slave_pid;
     string mensaje_in, comando;
 
     std::map<string, int> com = {
@@ -217,13 +222,17 @@ int main()
     //len = sizeof(cliaddr);
 
     //std::thread(ACKTimeout).detach();
+    //MONOCLIENTE MEJORAR
+
 
     for(;;)
     {
-        cout << "En espera";
-        mensaje_in = EsperaPorMensaje();
+        cout << "En espera comando";
+        mensaje_in = EsperaPorMensaje(cliente_pid);
+        map_cliente[cliente_pid] = cliaddr;
 
         comando = mensaje_in.substr(0,2);
+        
 
         switch (com[comando])
         {
@@ -235,9 +244,9 @@ int main()
             EnviarMensaje(mensaje_in, &map_slave[cualslave]);
 
             //Responder Consulta
-            string mensaje_out = EsperaPorMensaje();
+            string mensaje_out = EsperaPorMensaje(slave_pid);
             cout << "estado: " << mensaje_out;
-            EnviarMensaje(mensaje_out, &cliaddr);
+            EnviarMensaje(mensaje_out, &map_cliente[cliente_pid]);
 
             break;
         }

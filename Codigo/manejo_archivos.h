@@ -42,3 +42,11 @@ void String2Txt (string filename, string mensaje)
   ofs << mensaje;
   ofs.close();
 }
+
+void String2File (string filename, string mensaje)
+{
+  std::ofstream ofs;
+  ofs.open (filename, std::ofstream::out | std::ios_base::binary);
+  ofs.write(mensaje.c_str(), mensaje.size());
+  ofs.close();
+}

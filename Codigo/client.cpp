@@ -131,7 +131,7 @@ int main()
         //Por ahora incluir numero de caracteres del nombre
         //ejm: 09texto.txt
         //EnviarMensaje("AR"+mensaje_out);
-        EnviarMensaje("CN07Juanito0104Edad0240");
+        EnviarMensaje("CN06Pamela0104Edad0240");
         
         //Espera de mensaje
         cout << "En espera";
