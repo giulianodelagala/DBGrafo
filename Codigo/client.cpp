@@ -44,6 +44,7 @@ void EnviarMensaje(string mensaje)
     for (int sec= secuencia_ini; sec < secuencia_fin; ++sec)
     {
         EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec));
+        cout << "algo";
     }
 }
 
@@ -52,7 +53,7 @@ void EnviarPaquete(string cadena)
     sendto(sockfd, cadena.c_str(), cadena.length(),
             MSG_CONFIRM, (const struct sockaddr *) &servaddr,
              sizeof(servaddr));
-        cout << "\nPaquete enviado";
+    cout << "\nPaquete enviado";
 }
 
 string EsperaPorMensaje()
@@ -98,8 +99,8 @@ int main()
     string comando;
     
     std::map<string, int> com = {
-        {"AR", 1}, //Envio de Archivo
-        {"AA", 98} //ACK
+        {"OK", 1}, //Envio de Archivo
+        {"ER", 98} //ACK
     };
  
     host = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
@@ -119,26 +120,23 @@ int main()
     //servaddr.sin_addr.s_addr = INADDR_ANY;
 
     int n;
-    cout << "\nComando";
+    
+    
+    for (;;)
+    {
+        cout << "\nComando";
         getline(cin, mensaje_out);
 
         //Enviar nombre de archivo a transmitir
         //Por ahora incluir numero de caracteres del nombre
         //ejm: 09texto.txt
         //EnviarMensaje("AR"+mensaje_out);
-        EnviarMensaje("CN04Alex0104Edad0222");
-    
-    for (;;)
-    {
-        /*
-        //Enviar nombre de archivo a transmitir
-        //Por ahora incluir numero de caracteres del nombre
-        //ejm: 09texto.txt
-        EnviarMensaje("AR"+mensaje_out);
-*/
+        EnviarMensaje("CN07Juanito0104Edad0240");
+        
         //Espera de mensaje
+        cout << "En espera";
         mensaje_in = EsperaPorMensaje();
-    
+        cout << "recibido" << mensaje_in;
         //Procesar mensaje payload
         //Extraccion de comando
         comando = mensaje_in.substr(0,2);
@@ -147,16 +145,16 @@ int main()
         {
         case 1: //AR 
         {
-            EnviarMensaje("OK");
-            mensaje_in = EsperaPorMensaje();
-            cout << "\nMensaje Recibido:"; // << mensaje_in;
+            //EnviarMensaje("OK");
+            //mensaje_in = EsperaPorMensaje();
+            cout << "\nConsulta Exitosa:"; // << mensaje_in;
             //String2Txt(mensaje_out, mensaje_in);
-            String2Txt(mensaje_out, mensaje_in);
+            //String2Txt(mensaje_out, mensaje_in);
             break;
         }
         case 98: //ACK
         {
-            cout << "\nACK Recibido";
+            cout << "\nError";
             break;
         }
               

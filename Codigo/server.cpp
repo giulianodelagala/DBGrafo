@@ -21,7 +21,9 @@
 #include "manejo_archivos.h"
 
 #define PORT     8080
-#define PORT_SLAVE 9090
+#define PORT_SLAVE 6060
+#define PORT_SLAVE2 7070
+#define PORT_SLAVE3 9090
 #define MAXLINE 512
 
 using std::cout; using std::cin;
@@ -31,8 +33,10 @@ using std::string;
 struct sockaddr_in servaddr, cliaddr; 
 int sockfd; 
 char buffer[MAXLINE]; 
-struct sockaddr_in  slaveaddr;
+struct sockaddr_in  slaveaddr, slaveaddr2, slaveaddr3;
+int NSLAVE = 3;
 //unsigned int len;
+
 /////////////////
 
 RDT Rdt;
@@ -114,6 +118,25 @@ string EsperaPorMensaje()
     return mensaje_in;
 }
 
+int funHash(string cadena)
+{
+        int hashVal, j;
+        hashVal = (int) cadena[0];
+        for (j = 1; j < cadena.size(); j++)
+            hashVal += (int) cadena[j];
+        return(hashVal % NSLAVE);
+}
+
+int ElegirSlave(string mensaje)
+{
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name);
+    return funHash(name);
+}
+
+
+
 /*
 void ACKTimeout()
 {
@@ -135,6 +158,33 @@ int main()
     slaveaddr.sin_port = htons(PORT_SLAVE);
     slaveaddr.sin_addr = *((struct in_addr *)slave->h_addr);
     ////////////////
+
+    //Slave2//
+    struct hostent *slave2;
+    slave2 = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
+    memset(&slaveaddr2, 0, sizeof(slaveaddr2));
+    // Filling slave information
+    slaveaddr2.sin_family = AF_INET;
+    slaveaddr2.sin_port = htons(PORT_SLAVE2);
+    slaveaddr2.sin_addr = *((struct in_addr *)slave2->h_addr);
+    ////////////////
+
+    //Slave3//
+    struct hostent *slave3;
+    slave3 = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
+    memset(&slaveaddr3, 0, sizeof(slaveaddr3));
+    // Filling slave information
+    slaveaddr3.sin_family = AF_INET;
+    slaveaddr3.sin_port = htons(PORT_SLAVE3);
+    slaveaddr3.sin_addr = *((struct in_addr *)slave3->h_addr);
+    ////////////////
+
+
+    std::map<int,sockaddr_in> map_slave{
+        {0, slaveaddr},
+        {1, slaveaddr2},
+        {2, slaveaddr3}
+    };
 
     int n;
     string mensaje_in, comando;
@@ -177,26 +227,18 @@ int main()
 
         switch (com[comando])
         {
-        case 1: //AR
+        case 1: //CN
         {
-                        
-            EnviarMensaje(mensaje_in, &slaveaddr);
+            int cualslave = ElegirSlave(mensaje_in); 
+            cout << "cual" << cualslave;
+            //EnviarMensaje(mensaje_in, &slaveaddr);
+            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
 
-            /*
-            if (EsperaPorMensaje().substr(0,2) == "OK")
-            {   
-                // Crear Thread para envío de mensajes
-                sockaddr_in* cliente = new sockaddr_in();
-                *cliente = cliaddr;
-                
-                std::thread(EnviarArchivoTxt, file_name, cliente).detach();                
-                //EnviarMensaje(Rdt.PrepararACK(), cliente);              
-            }
-            else
-            {
-                cout << "Error";
-            }
-              */          
+            //Responder Consulta
+            string mensaje_out = EsperaPorMensaje();
+            cout << "estado: " << mensaje_out;
+            EnviarMensaje(mensaje_out, &cliaddr);
+
             break;
         }
         case 99: //Error de Checksum

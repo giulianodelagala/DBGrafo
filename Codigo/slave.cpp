@@ -21,7 +21,7 @@
 
 using std::string; using std::map;
 
-#define PORT_SLAVE     9090
+//#define PORT_SLAVE     9090
 #define MAXLINE 512
 
 //using std::cout; using std::cin;
@@ -30,14 +30,18 @@ using std::string; using std::map;
 //Variables de Red
 struct sockaddr_in slaveaddr, masteraddr; 
 int sockfd; 
-char buffer[MAXLINE]; 
+char buffer[MAXLINE];
+//int PORT_SLAVE = 9090;
+//char* db_file;
 //unsigned int len;
 /////////////////
 
 RDT Rdt;
-DB Sql("test.db");
 
-string CreacionNodo(string mensaje)
+//DB Sql("test1.db");
+DB Sql;
+
+bool CreacionNodo(string mensaje)
 {
     //size y name de nodo
     int size_name = stoi(mensaje.substr(2,2));
@@ -53,7 +57,13 @@ string CreacionNodo(string mensaje)
 
     cout << name << "," << name_atrib <<"," << name_value;
     Sql.CrearNodo(name);
-    Sql.InsertAtributo(name, name_atrib, name_value);
+    if (Sql.InsertAtributo(name, name_atrib, name_value))
+        return true;
+    else
+    {
+        return false;
+    }
+    
 }
       
     
@@ -93,7 +103,7 @@ string EliminarRelacion (string mensaje)
 
 }
 
-void RecepcionConsulta(string mensaje)
+string RecepcionConsulta(string mensaje)
 {
     string comando = mensaje.substr(0,2);
 
@@ -119,7 +129,10 @@ void RecepcionConsulta(string mensaje)
     switch (opciones[comando])
     {
     case 1: 
-        CreacionNodo(mensaje);
+        if (CreacionNodo(mensaje))
+            return "OK";
+        else
+            return "ER";
         break;
     case 2:
         CreacionRelacion (mensaje);
@@ -147,6 +160,22 @@ void RecepcionConsulta(string mensaje)
     default:
         break;
     }
+}
+
+string create_json(vector <string> c,vector<string> t){
+    string result="{";
+    auto row_atributo=t.begin();
+    for(auto i:c){
+        if(*row_atributo == t[t.size()-1]){
+            result=result+*row_atributo+":'"+i+"',";
+            row_atributo=t.begin();    
+            continue;
+        }
+        result=result+*row_atributo+":'"+i+"',";
+        row_atributo++;       
+    }
+    result[result.size()-1]='}';
+    return result;
 }
 
 void PrepararRespuesta()
@@ -228,8 +257,36 @@ void ACKTimeout()
     } 
 }
 */
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc != 3)
+    {
+        cout << "Parametros incompletos PORT DB";
+        exit(1);
+    }
+
+    char* db_file = argv[2];
+    int PORT_ = atoi(argv[1]);
+    int PORT_SLAVE;
+    
+    Sql.Conexion(db_file);
+    
+    switch (PORT_)
+    {
+    case 1:
+        PORT_SLAVE = 6060;
+        break;
+    case 2:
+        PORT_SLAVE = 7070;
+        break;
+    case 3:
+        PORT_SLAVE = 9090;
+        break;
+    
+    default:
+        break;
+    }
+
     int n;
     string mensaje_in, comando;
 
@@ -264,10 +321,13 @@ int main()
 
     for(;;)
     {
-        cout << "En espera";
+        cout << "En espera\n";
         mensaje_in = EsperaPorMensaje();
+        cout << mensaje_in;
+        string rpta = RecepcionConsulta(mensaje_in);
+        EnviarMensaje(rpta, &masteraddr);
+
         
-        RecepcionConsulta(mensaje_in);
         /*
         comando = mensaje_in.substr(0,2);
 
@@ -311,14 +371,3 @@ int main()
     
     return 0;
 }
-
-/*
-int main()
-{
-    
-    string consulta = "CN04Pepe0104Edad0222";
-    RecepcionConsulta(consulta);
-
-    return 0;
-}
-*/
