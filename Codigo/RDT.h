@@ -188,7 +188,8 @@ public:
   void PreparacionMensaje(string mensaje);
   bool RecepcionPaquete(string Paquete);
 
-  string PrepararACK(); //TODO
+  string PrepararACK();
+  vector<int> LeerACK(string temp);
   
   RDT()
   {
@@ -305,9 +306,3 @@ bool RDT::RecepcionPaquete(string mensaje)
     return false;
   }
 }
-
-string RDT::PrepararACK()
-{
-  return "AA"; //Prueba de Envio ACK
-}
-

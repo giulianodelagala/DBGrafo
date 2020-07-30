@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-//#include <netdb.h>
+#include <netdb.h>
 //#include <errno.h>
 //#include <ctime>
 
@@ -21,6 +21,7 @@
 #include "manejo_archivos.h"
 
 #define PORT     8080
+#define PORT_SLAVE 9090
 #define MAXLINE 512
 
 using std::cout; using std::cin;
@@ -30,27 +31,14 @@ using std::string;
 struct sockaddr_in servaddr, cliaddr; 
 int sockfd; 
 char buffer[MAXLINE]; 
+struct sockaddr_in  slaveaddr;
 //unsigned int len;
 /////////////////
 
 RDT Rdt;
 
-//string File2String (string filename);
-//string Txt2String (string filename);
 void EnviarPaquete(string cadena, sockaddr_in* cliente);
-/*
-void EnviarMensaje(string mensaje)
-{
-    int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
-    Rdt.PreparacionMensaje(mensaje);
-    int secuencia_fin = Rdt.SECUENCIA_OUT_ACTUAL; //Número actual luego de creacion datagram
 
-    for (int sec= secuencia_ini; sec < secuencia_fin; ++sec)
-    {
-        EnviarPaquete(Rdt.VEC_SECUENCIAS_OUT->at(sec));
-    }
-}
-*/
 void EnviarMensaje(string mensaje, sockaddr_in* cliente)
 {
     int secuencia_ini = Rdt.SECUENCIA_OUT_ACTUAL; //numero de secuencia antes de creacion datagram
@@ -63,19 +51,17 @@ void EnviarMensaje(string mensaje, sockaddr_in* cliente)
     } 
 }
 
-/*
-void EnviarPaquete(string cadena)
-{
-    sendto(sockfd, cadena.c_str(), cadena.length(),
-            MSG_CONFIRM, (const struct sockaddr *) &cliaddr,
-             len);
-        cout << "\nPaquete enviado";
-}
-*/
 void EnviarArchivoTxt(string filename, sockaddr_in* cliente)
 {
     string texto = Txt2String(filename);
     EnviarMensaje (texto, cliente);
+    EnviarMensaje ("Fin de Archivo", cliente);
+}
+
+void EnviarArchivo(string filename, sockaddr_in* cliente)
+{
+    string file_ = File2String(filename);
+    EnviarMensaje (file_, cliente);
     EnviarMensaje ("Fin de Archivo", cliente);
 }
 
@@ -128,7 +114,6 @@ string EsperaPorMensaje()
     return mensaje_in;
 }
 
-
 /*
 void ACKTimeout()
 {
@@ -141,11 +126,21 @@ void ACKTimeout()
 */
 int main()
 {
+    //Slave//
+    struct hostent *slave;
+    slave = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
+    memset(&slaveaddr, 0, sizeof(slaveaddr));
+    // Filling slave information
+    slaveaddr.sin_family = AF_INET;
+    slaveaddr.sin_port = htons(PORT_SLAVE);
+    slaveaddr.sin_addr = *((struct in_addr *)slave->h_addr);
+    ////////////////
+
     int n;
     string mensaje_in, comando;
 
     std::map<string, int> com = {
-        {"AR", 1}, //Envio de Archivo
+        {"CN", 1}, //Envio de Archivo
         {"XX", 99} //Error de Checksum
     };
         
@@ -184,28 +179,24 @@ int main()
         {
         case 1: //AR
         {
-            int size_name = stoi(mensaje_in.substr(2,2));
-            string file_name = mensaje_in.substr(4,size_name);
-            
-            
-            EnviarMensaje("AR", &cliaddr);
+                        
+            EnviarMensaje(mensaje_in, &slaveaddr);
+
+            /*
             if (EsperaPorMensaje().substr(0,2) == "OK")
             {   
                 // Crear Thread para envío de mensajes
                 sockaddr_in* cliente = new sockaddr_in();
                 *cliente = cliaddr;
                 
-                //string texto = Txt2String(file_name);
-                std::thread(EnviarArchivoTxt, file_name, cliente).detach();
-                
-                //EnviarMensaje(Rdt.PrepararACK(), cliente);
-                //EnviarMensaje(texto);
+                std::thread(EnviarArchivoTxt, file_name, cliente).detach();                
+                //EnviarMensaje(Rdt.PrepararACK(), cliente);              
             }
             else
             {
                 cout << "Error";
             }
-                        
+              */          
             break;
         }
         case 99: //Error de Checksum
@@ -222,33 +213,3 @@ int main()
     
     return 0;
 }
-/*
-string File2String (string filename)
-{
-  std::streampos size;
-  char* memblock; //bloque de memoria donde se albergara file
-
-  std::ifstream file(filename, std::ios::in|std::ios::binary|std::ios::ate);
-  if (file.is_open())
-  {
-    size = file.tellg();
-    memblock = new char[size];
-    file.seekg(0, std::ios::beg);
-    file.read (memblock, size);
-    file.close();
-    string filecadena(memblock);
-    delete[] memblock;
-    return filecadena;
-  }
-  else
-    return "Error";
-}
-
-string Txt2String (string filename)
-{
-    std::ifstream t(filename);
-    std::stringstream cadena;
-    cadena << t.rdbuf();
-    return cadena.str();
-}
-*/

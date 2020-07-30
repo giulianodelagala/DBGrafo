@@ -119,20 +119,18 @@ int main()
     //servaddr.sin_addr.s_addr = INADDR_ANY;
 
     int n;
-    cout << "\nNombre Archivo";
+    cout << "\nComando";
         getline(cin, mensaje_out);
 
         //Enviar nombre de archivo a transmitir
         //Por ahora incluir numero de caracteres del nombre
         //ejm: 09texto.txt
-        EnviarMensaje("AR"+mensaje_out);
+        //EnviarMensaje("AR"+mensaje_out);
+        EnviarMensaje("CN04Alex0104Edad0222");
     
     for (;;)
     {
         /*
-        cout << "\nNombre Archivo";
-        getline(cin, mensaje_out);
-
         //Enviar nombre de archivo a transmitir
         //Por ahora incluir numero de caracteres del nombre
         //ejm: 09texto.txt
@@ -152,6 +150,7 @@ int main()
             EnviarMensaje("OK");
             mensaje_in = EsperaPorMensaje();
             cout << "\nMensaje Recibido:"; // << mensaje_in;
+            //String2Txt(mensaje_out, mensaje_in);
             String2Txt(mensaje_out, mensaje_in);
             break;
         }
