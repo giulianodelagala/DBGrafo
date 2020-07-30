@@ -62,14 +62,23 @@ bool CreacionNodo(string mensaje)
     else
     {
         return false;
-    }
-    
+    } 
 }
       
-    
-string CreacionRelacion (string mensaje)
+bool CreacionRelacion (string mensaje)
 {
+    //from_size y from_name de la relacion
+    int from_size = stoi(mensaje.substr(2,2));
+    string from_name = mensaje.substr(4, from_size);
+    //to_size y to_name de la relacion
+    int to_size = stoi(mensaje.substr(4+from_size,2));
+    string to_name = mensaje.substr(6+from_size, to_size);
 
+    cout << from_name << "," << to_name << "\n";
+    if (Sql.InsertRelacion(from_name,to_name))
+        return true;
+    else
+        return false;
 }
       
     
@@ -135,7 +144,10 @@ string RecepcionConsulta(string mensaje)
             return "ER";
         break;
     case 2:
-        CreacionRelacion (mensaje);
+        if (CreacionRelacion (mensaje))
+            return "OK";
+        else
+            return "ER";
         break; 
     case 3:
         LeerAtributos (mensaje);
@@ -356,7 +368,7 @@ int main(int argc, char* argv[])
                         
             break;
         }
-        
+
         case 99: //Error de Checksum
         {
             cout << "Error de Recepción Checksum";

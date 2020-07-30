@@ -28,6 +28,7 @@
 
 using std::cout; using std::cin;
 using std::string;
+using std::map;
 
 //Variables de Red
 struct sockaddr_in servaddr, cliaddr; 
@@ -138,6 +139,26 @@ int ElegirSlave(string mensaje)
     return funHash(name);
 }
 
+vector<int> ElegirSlaveRelacion(string mensaje, string &new_mensaje)
+{
+    vector<int> slaves;
+    
+    //from_size y from_name de la relacion
+    int from_size = stoi(mensaje.substr(2,2));
+    string from_name = mensaje.substr(4, from_size);
+
+    //to_size y to_name de la relacion
+    int to_size = stoi(mensaje.substr(4+from_size,2));
+    string to_name = mensaje.substr(6+from_size, to_size);
+
+    new_mensaje = "CR" + mensaje.substr(4+from_size,2) +
+     to_name + mensaje.substr(2,2) + from_name;
+
+    slaves.push_back(funHash(from_name));
+    slaves.push_back(funHash(to_name));
+    return slaves;
+}
+
 
 
 /*
@@ -194,8 +215,23 @@ int main()
     int n, cliente_pid, slave_pid;
     string mensaje_in, comando;
 
-    std::map<string, int> com = {
-        {"CN", 1}, //Envio de Archivo
+    map<string,int> opciones {
+        {"CN", 1}, //Creacion Nodo
+        {"CR", 2}, //Creacion Relacion
+        
+        {"RN", 3}, //Leer atributos de Nodo 
+        {"RR", 4}, //Leer relacion de nodo en niveles
+        
+        {"UA", 5}, //actualizacion de atributo nodo
+        {"UR", 6}, //actualizacion de relacion CREO Q NO ES NECESARIO
+        
+        {"DN", 7}, //Eliminar nodo
+        {"DA", 8}, //Eliminar atributo de nodo
+        {"DR", 9}, //Eliminar relacion de nodo
+        
+        {"SN", 10}, //Mostrar informacion de nodo
+        {"SA", 11}, //Mostrar atributo de nodo
+        {"SR", 12}, //mostrar relacion de nodo
         {"XX", 99} //Error de Checksum
     };
         
@@ -234,22 +270,46 @@ int main()
         comando = mensaje_in.substr(0,2);
         
 
-        switch (com[comando])
+        switch (opciones[comando])
         {
-        case 1: //CN
+        case 1: //Creacion Nodo
         {
             int cualslave = ElegirSlave(mensaje_in); 
-            cout << "cual" << cualslave;
-            //EnviarMensaje(mensaje_in, &slaveaddr);
+            cout << "\nEnviando a Slave: " << cualslave;
             EnviarMensaje(mensaje_in, &map_slave[cualslave]);
 
             //Responder Consulta
             string mensaje_out = EsperaPorMensaje(slave_pid);
-            cout << "estado: " << mensaje_out;
+            cout << "\nResultado: " << mensaje_out;
             EnviarMensaje(mensaje_out, &map_cliente[cliente_pid]);
-
             break;
         }
+        case 2: //Creacion Relacion
+        {
+            string new_mensaje;
+            vector<int> slaves = ElegirSlaveRelacion(mensaje_in, new_mensaje);
+
+            cout << "\nEnviando a Slave: " << slaves[0];
+            EnviarMensaje(mensaje_in, &map_slave[slaves[0]]);
+            string mensaje_out_1 = EsperaPorMensaje(slave_pid);
+            cout << "\nResult: " << slaves[0] << mensaje_out_1;
+
+            //Relacion Inversa
+            cout << "\nEnviando a Slave: " << slaves[1];
+            EnviarMensaje(new_mensaje, &map_slave[slaves[1]]);
+            string mensaje_out_2 = EsperaPorMensaje(slave_pid);
+            cout << "\nResult: " << slaves[1] << mensaje_out_2;
+
+            //Responder Consulta
+            if (mensaje_out_1 == "OK" && mensaje_out_2 == "OK")
+                EnviarMensaje("OK", &map_cliente[cliente_pid]);
+            else
+            {
+               EnviarMensaje("ER", &map_cliente[cliente_pid]);
+            }
+            break;
+        }
+
         case 99: //Error de Checksum
         {
             cout << "Error de Recepción Checksum";

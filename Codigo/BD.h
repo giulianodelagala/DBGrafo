@@ -131,9 +131,9 @@ bool DB::InsertAtributo(string nombre_nodo, string atributo, string valor)
 bool DB::InsertRelacion(string nombre_from, string nombre_to)
 {
     string id_nodo_from = to_string(GetID(nombre_from));
-    string id_nodo_to = to_string(GetID(nombre_to));
+    //string id_nodo_to = to_string(GetID(nombre_to));
 
-    string query = "INSERT INTO RELACION ('ID_NODO_FROM','ID_NODO_TO') VALUES (" + id_nodo_from + "," + id_nodo_to + ");";
+    string query = "INSERT INTO RELACION ('ID_NODO_FROM','ID_NODO_TO') VALUES (" + id_nodo_from + ",\"" + nombre_to + "\");";
     cout << query;
 
     return exec(query.c_str()); 

@@ -127,11 +127,8 @@ int main()
         cout << "\nComando";
         getline(cin, mensaje_out);
 
-        //Enviar nombre de archivo a transmitir
-        //Por ahora incluir numero de caracteres del nombre
-        //ejm: 09texto.txt
-        //EnviarMensaje("AR"+mensaje_out);
-        EnviarMensaje("CN06Pamela0104Edad0240");
+        //EnviarMensaje("CN06Pamela0104Edad0240");
+        EnviarMensaje("CR03Ana03Ana");
         
         //Espera de mensaje
         cout << "En espera";
