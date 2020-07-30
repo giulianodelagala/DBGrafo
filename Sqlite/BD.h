@@ -26,7 +26,7 @@ class DB
 private:
     sqlite3* connDB;
 public:
-
+    string file_db;
     bool exec(const char* sql);
     void execSELECT(string table, string columns, string where);
     
@@ -43,9 +43,10 @@ public:
     bool DeleteAtributo(string nombre_nodo, string atributo);
     bool DeleteRelacion(string nombre_from, string nombre_to);
 
-    DB()
+    DB(string file_db)
     {
-        if (sqlite3_open("./test.db", &connDB) == SQLITE_OK)
+        this->file_db = file_db;
+        if (sqlite3_open(file_db.c_str(), &connDB) == SQLITE_OK)
             cout << "Conexion a DB exitosa\n";
         else
             cout << "Failed to open db\n";
