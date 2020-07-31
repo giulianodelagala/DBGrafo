@@ -254,7 +254,7 @@ bool DB::UpdateAtributo(string nombre_nodo, string atributo, string valor)
 
 ////////////////////////
 /// DELETE ///////////
-////////////////////////
+/////////////////////////
 
 bool DB::DeleteNodo(string nombre_nodo)
 {

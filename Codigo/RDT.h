@@ -175,10 +175,7 @@ public:
   queue<int> cola_flujos_in;
 
   unsigned int SECUENCIA_OUT_ACTUAL = 0; 
-  unsigned int FLUJO_OUT_ACTUAL = 0; //Numero de flujo salida
-
-  //unsigned int SECUENCIA_ACK_ACTUAL = 100; //Enviar ack de los ultimos 100 paquetes
-  
+  unsigned int FLUJO_OUT_ACTUAL = 0; //Numero de flujo salida  
 
   string PadZeros(int number, int longitud);
   int GenChecksum(string cadena);
@@ -296,7 +293,6 @@ bool RDT::RecepcionPaquete(string mensaje)
   if (flujo->InsertarPackage(pkg))
   {
     cout << "\nPkg Insert Flujo:" << pkg->flujo << " Sec " << pkg->sec_flujo << " PID: " << pkg->pid;
-    //VEC_SECUENCIAS_IN->at(pkg->secuence) = true; //Marcado como recibido correctamente 
     return true;
   }
   else

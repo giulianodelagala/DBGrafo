@@ -252,15 +252,12 @@ int main()
         {"RF", 4}, //Leer relacion de nodo en niveles
         
         {"UA", 5}, //actualizacion de atributo nodo
-        {"UR", 6}, //actualizacion de relacion CREO Q NO ES NECESARIO
+        {"CA", 6}, //crear atributo
         
         {"DN", 7}, //Eliminar nodo
         {"DA", 8}, //Eliminar atributo de nodo
         {"DR", 9}, //Eliminar relacion de nodo
         
-        {"SN", 10}, //Mostrar informacion de nodo
-        {"SA", 11}, //Mostrar atributo de nodo
-        {"SR", 12}, //mostrar relacion de nodo
         {"XX", 99} //Error de Checksum
     };
         
@@ -417,7 +414,7 @@ int main()
                         {   
                             //Busqueda en vector auxiliar
                             std::vector<string>::iterator p = find( auxiliar.begin(), auxiliar.end(), new_nodo) ;
-                            if (p == auxiliar.end() )
+                            if (p == auxiliar.end() && new_nodo != name)
                             {
                                 auxiliar.push_back(new_nodo);
                             }
@@ -431,7 +428,7 @@ int main()
             string rpta = "";
             for (int i = 0; i < niveles; ++i)
             {
-                rpta += "Nivel " + std::to_string(i) + " :";
+                rpta += "Nivel " + std::to_string(i+1) + " :";
                 for (auto nodo: NODOS[i])
                 {
                     if (flag)
@@ -483,8 +480,19 @@ int main()
             break;
         }
         
-        case 6: //actualizacion de relacion CREO Q NO ES NECESARIO
+        case 6: //crear atributo en nodo
         {
+            int cualslave = ElegirSlave(mensaje_in); 
+            cout << "\nEnviando a Slave: " << cualslave;
+            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
+
+            //Responder Consulta
+            string mensaje_out = EsperaPorMensaje(slave_pid);
+            cout << "\nResultado: " << mensaje_out;
+            if (mensaje_out == "OK")
+                EnviarMensaje("OK206", &map_cliente[cliente_pid]);
+            else
+                EnviarMensaje("ER400", &map_cliente[cliente_pid]);         
             break;
         }
 

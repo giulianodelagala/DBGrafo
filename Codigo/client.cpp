@@ -16,7 +16,6 @@
 #include <string>
 
 #include "RDT.h"
-#include "manejo_archivos.h"
 
 #define PORT    8080 //8080
 #define MAXLINE 512
@@ -163,6 +162,17 @@ string crear(string temp){
 			}
 		}
 	}
+	if(partes[0]=="atributo"){
+		msg="CA";
+		msg+=formar_palabra(partes[1]);
+		sep_comas(partes[2],"=",atributo,valor);
+		//msg+=PadZeros(atributo.size(),tam);
+		for(int i=0;i<atributo.size();i++){
+			msg+=formar_palabra(atributo[i]);
+			msg+=formar_palabra(valor[i]);
+		}
+			
+	}
 	if(partes[0]=="relacion"){
 		msg="CR";
 		sep_comas(partes[1],"-",atributo,valor);
@@ -255,7 +265,7 @@ string mostrar(string temp){
 		msg+=formar_palabra(partes[1]);
 	}
 	if(partes[0]=="relacion"){
-		msg="RR";
+		msg="RF";
 		msg+=formar_palabra(partes[1]);
 		if(partes.size()>2){
 			vector<string> izq;
@@ -317,6 +327,7 @@ int main()
         {201, "Nodo Creado"},
         {202, "Relacion Creada"},
         {203, "Atributo Actualizado"},
+		{206, "Atributo Creado"},
         {207, "Nodo Eliminado"},
         {208, "Atributo Eliminado"},
         {209, "Relacion Eliminada"},
@@ -347,9 +358,9 @@ int main()
         cout<<"\n\n---------------------EJEMPLOS------------------\n";
 		cout<< "crear nodo ana atributo edad=18\n";
 		cout<< "crear relacion ana-juan\n";
+		cout<< "crear atributo ana edad=18\n";
 		cout<<"-----------------------------------------------\n";
 		cout<< "actualizar ana atributo edad=16\n";
-		//cout<< "actualizar ana relacion billy=pedro\n";
 		cout<<"-----------------------------------------------\n";
 		cout<< "borrar nodo ana\n";
 		cout<< "borrar atributo ana edad\n";
@@ -362,17 +373,14 @@ int main()
         cout << "\nComando: ";
         getline(cin, mensaje_out);
         mensaje_out=conver_prot(mensaje_out);
-        //EnviarMensaje("CN06Pamela0104Edad0240");
-        //EnviarMensaje("DR06Damian06Damian");
-        //EnviarMensaje("RN03Ana");
-        //EnviarMensaje("RF03Ana");
+		cout << mensaje_out;
+ 
         if(mensaje_out!=""){
             EnviarMensaje(mensaje_out);
         }
         //Espera de mensaje
         cout << "En espera";
         mensaje_in = EsperaPorMensaje();
-        //cout << "recibido" << mensaje_in;
         //Procesar mensaje payload
         //Extraccion de comando
         comando = mensaje_in.substr(0,2);
@@ -381,7 +389,6 @@ int main()
         {
         case 1: //OK
         {
-            //cout << "\nConsulta Exitosa:"; // << mensaje_in;
             int codigo = stoi(mensaje_in.substr(2,3));
 			cout << "\n-------------------------";
             cout << "\n" << map_codigo[codigo];

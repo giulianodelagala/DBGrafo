@@ -56,6 +56,28 @@ bool CreacionNodo(string mensaje)
         return false;
     } 
 }
+
+bool CreacionAtributo(string mensaje)
+{
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name);
+    //Size y nombre atributo
+    int size_atrib = stoi(mensaje.substr(4+size_name,2));
+    string name_atrib = mensaje.substr(6 + size_name, size_atrib);
+    //size y nombre de valor
+    int size_value = stoi(mensaje.substr(6+ size_name + size_atrib, 2));
+    string name_value = mensaje.substr(8+ size_name+size_atrib, size_value);
+
+    cout << name << "," << name_atrib <<"," << name_value;
+    
+    if (Sql.InsertAtributo(name, name_atrib, name_value))
+        return true;
+    else
+    {
+        return false;
+    } 
+}
       
 bool CreacionRelacion (string mensaje)
 {
@@ -99,12 +121,6 @@ string LeerAmigos (string mensaje)
     //size y name de nodo
     int size_name = stoi(mensaje.substr(2,2));
     string name = mensaje.substr(4, size_name);
-    //Level
-    //int level = stoi(mensaje.substr(4+size_name, 1));
-    //flag
-    //string flag = mensaje.substr(5+size_name, 1);
-
-    //cout << name << "," << level << "," << flag << "\n";
 
     vector<string> id_nodos = Sql.GetNameFriends(name);
     for(int j = 0; j < id_nodos.size(); j++){
@@ -193,15 +209,13 @@ string RecepcionConsulta(string mensaje)
         {"RF", 4}, //Leer relacion de nodo en niveles
         
         {"UA", 5}, //actualizacion de atributo nodo
-        {"UR", 6}, //actualizacion de relacion CREO Q NO ES NECESARIO
+        
+        {"CA", 6}, //creacion de atributo en nodo
         
         {"DN", 7}, //Eliminar nodo
         {"DA", 8}, //Eliminar atributo de nodo
         {"DR", 9}, //Eliminar relacion de nodo
         
-        {"SN", 10}, //Mostrar informacion de nodo
-        {"SA", 11}, //Mostrar atributo de nodo
-        {"SR", 12} //mostrar relacion de nodo
     };
 
     switch (opciones[comando])
@@ -230,6 +244,11 @@ string RecepcionConsulta(string mensaje)
         else
             return "ER";
         break;
+    case 6:
+        if (CreacionAtributo(mensaje))
+            return "OK";
+        else 
+            return "ER";
     case 7:
         if (EliminarNodo (mensaje))
             return "OK";
@@ -366,23 +385,6 @@ int main(int argc, char* argv[])
     };
     PORT_SLAVE = map_puertos[PORT_];
 
-/*
-    switch (PORT_)
-    {
-    case 0:
-        PORT_SLAVE = 9090;
-        break;
-    case 1:
-        PORT_SLAVE = 9191;
-        break;
-    case 2:
-        PORT_SLAVE = 9292;
-        break;
-    case 3:
-        PORT_SLAVE = 9393;
-        break;
-    }
-*/
     int n;
     string mensaje_in, comando;
 
