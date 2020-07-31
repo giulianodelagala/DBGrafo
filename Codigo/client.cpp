@@ -100,7 +100,20 @@ int main()
     
     std::map<string, int> com = {
         {"OK", 1}, //Envio de Archivo
-        {"ER", 98} //ACK
+        {"RN", 2},
+        {"RF", 3},
+        {"ER", 98} //Error
+        
+    };
+
+    std::map<int,string> map_codigo = {
+        {201, "Nodo Creado"},
+        {202, "Relacion Creada"},
+        {203, "Atributo Actualizado"},
+        {207, "Nodo Eliminado"},
+        {208, "Atributo Eliminado"},
+        {209, "Relacion Eliminada"},
+        {400, "Error en la Consulta"}
     };
  
     host = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
@@ -128,30 +141,44 @@ int main()
         getline(cin, mensaje_out);
 
         //EnviarMensaje("CN06Pamela0104Edad0240");
-        EnviarMensaje("CR03Ana03Ana");
+        //EnviarMensaje("DR06Damian06Damian");
+        //EnviarMensaje("RN03Ana");
+        EnviarMensaje("RF03Ana");
         
         //Espera de mensaje
         cout << "En espera";
         mensaje_in = EsperaPorMensaje();
-        cout << "recibido" << mensaje_in;
+        //cout << "recibido" << mensaje_in;
         //Procesar mensaje payload
         //Extraccion de comando
         comando = mensaje_in.substr(0,2);
         
         switch (com[comando])
         {
-        case 1: //AR 
+        case 1: //OK
         {
-            //EnviarMensaje("OK");
-            //mensaje_in = EsperaPorMensaje();
-            cout << "\nConsulta Exitosa:"; // << mensaje_in;
-            //String2Txt(mensaje_out, mensaje_in);
+            //cout << "\nConsulta Exitosa:"; // << mensaje_in;
+            int codigo = stoi(mensaje_in.substr(2,3));
+            cout << map_codigo[codigo];
             //String2Txt(mensaje_out, mensaje_in);
             break;
         }
-        case 98: //ACK
+        case 2: //Atributos de Nodo
         {
-            cout << "\nError";
+            int size_msg = stoi(mensaje_in.substr(2,3));
+            cout << mensaje_in.substr(5,size_msg);
+            break;
+        }
+        case 3: //Amigos de Nodo
+        {
+            int size_msg = stoi(mensaje_in.substr(2,3));
+            cout << mensaje_in.substr(5,size_msg);
+            break;
+        }
+        case 98: //ER
+        {
+            int codigo = stoi(mensaje_in.substr(2,3));
+            cout << map_codigo[codigo];
             break;
         }
               

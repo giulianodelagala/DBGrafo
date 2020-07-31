@@ -21,24 +21,16 @@
 
 using std::string; using std::map;
 
-//#define PORT_SLAVE     9090
 #define MAXLINE 512
-
-//using std::cout; using std::cin;
-//using std::string;
 
 //Variables de Red
 struct sockaddr_in slaveaddr, masteraddr; 
 int sockfd; 
 char buffer[MAXLINE];
-//int PORT_SLAVE = 9090;
-//char* db_file;
-//unsigned int len;
 /////////////////
 
 RDT Rdt;
 
-//DB Sql("test1.db");
 DB Sql;
 
 bool CreacionNodo(string mensaje)
@@ -84,32 +76,108 @@ bool CreacionRelacion (string mensaje)
     
 string LeerAtributos (string mensaje)
 {
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name); 
 
+    vector <Atr> consulta = Sql.ReadAtributosNodo(name);
+    vector <string> esquema={"atributo","valor"};
+    string result="[";
+    for(auto i:consulta){
+        result+="{";
+        result=result+esquema[0]+":"+string(i.atrib)+",";
+        result=result+esquema[1]+":"+string(i.value)+"},";
+    }
+    result[result.size()-1]=']';
+    result = "RN" + Rdt.PadZeros(result.length(), 3) + result;
+    return result;
 }
        
-string LeerRelacionNiveles (string mensaje)
+string LeerAmigos (string mensaje)
 {
+    string msg = "";
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name);
+    //Level
+    //int level = stoi(mensaje.substr(4+size_name, 1));
+    //flag
+    //string flag = mensaje.substr(5+size_name, 1);
 
+    //cout << name << "," << level << "," << flag << "\n";
+
+    vector<string> id_nodos = Sql.GetNameFriends(name);
+    for(int j = 0; j < id_nodos.size(); j++){
+        msg += id_nodos[j] + ",";
+    }
+    msg = "RF" + Rdt.PadZeros(msg.length(), 3) + msg;
+    cout << msg;
+    return msg;
 }
       
-string ActualizarAtributo (string mensaje)
+bool ActualizarAtributo (string mensaje)
 {
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name); 
+    //size y name del tipo de atributo
+    int size_tipo_atrib = stoi(mensaje.substr(4+size_name,2));
+    string tipo_atrib = mensaje.substr(6+size_name, size_tipo_atrib);
 
+    //size y nuevo valor del atributo
+    int size_new_val = stoi(mensaje.substr(6+size_name+size_tipo_atrib,2));
+    string new_val = mensaje.substr(8+size_name+size_tipo_atrib, size_new_val);
+
+    cout << name << "," << tipo_atrib << "," << new_val << "\n";
+    if (Sql.UpdateAtributo(name,tipo_atrib,new_val))
+        return true;
+    else
+        return false;
 }
 
-string EliminarNodo (string mensaje)
+bool EliminarNodo (string mensaje)
 {
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name); 
 
+    cout << name << "\n";
+    if (Sql.DeleteNodo(name))
+        return true;
+    else
+        return false;
 }
     
-string EliminarAtributo(string mensaje)
+bool EliminarAtributo(string mensaje)
 {
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name); 
+    //size y name del tipo de atributo
+    int a_size = stoi(mensaje.substr(4+size_name,2));
+    string a_name= mensaje.substr(6+size_name, a_size);
 
+    cout << name << "," << a_name << "\n";
+    if (Sql.DeleteAtributo(name, a_name))
+        return true;
+    else 
+        return false;
 }
      
-string EliminarRelacion (string mensaje)
+bool EliminarRelacion (string mensaje)
 {
+    //size y name de nodo
+    int size_name = stoi(mensaje.substr(2,2));
+    string name = mensaje.substr(4, size_name); 
+    //size y name de la relacion
+    int to_size = stoi(mensaje.substr(4+size_name,2));
+    string to_name= mensaje.substr(6+size_name, to_size);
 
+    cout << name << "," << to_name << "\n";
+    if (Sql.DeleteRelacion(name, to_name))
+        return true;
+    else 
+        return false;
 }
 
 string RecepcionConsulta(string mensaje)
@@ -121,7 +189,7 @@ string RecepcionConsulta(string mensaje)
         {"CR", 2}, //Creacion Relacion
         
         {"RN", 3}, //Leer atributos de Nodo 
-        {"RR", 4}, //Leer relacion de nodo en niveles
+        {"RF", 4}, //Leer relacion de nodo en niveles
         
         {"UA", 5}, //actualizacion de atributo nodo
         {"UR", 6}, //actualizacion de relacion CREO Q NO ES NECESARIO
@@ -150,26 +218,38 @@ string RecepcionConsulta(string mensaje)
             return "ER";
         break; 
     case 3:
-        LeerAtributos (mensaje);
+        return LeerAtributos (mensaje);
         break;   
     case 4:
-        LeerRelacionNiveles (mensaje);
+        return LeerAmigos (mensaje);
         break;
     case 5:
-        ActualizarAtributo (mensaje);
+        if (ActualizarAtributo (mensaje))
+            return "OK";
+        else
+            return "ER";
         break;
     case 7:
-        EliminarNodo (mensaje);
+        if (EliminarNodo (mensaje))
+            return "OK";
+        else
+            return "ER";
         break;
     case 8:
-        EliminarAtributo(mensaje);
+        if (EliminarAtributo(mensaje))
+            return "OK";
+        else
+            return "ER";
         break;
     case 9:
-        EliminarRelacion (mensaje);
+        if (EliminarRelacion (mensaje))
+            return "OK";
+        else 
+            return "ER";
         break;
 
-    
     default:
+        return "ER";
         break;
     }
 }
@@ -327,8 +407,6 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    //len = sizeof(masteraddr);
-
     //std::thread(ACKTimeout).detach();
 
     for(;;)
@@ -338,48 +416,6 @@ int main(int argc, char* argv[])
         cout << mensaje_in;
         string rpta = RecepcionConsulta(mensaje_in);
         EnviarMensaje(rpta, &masteraddr);
-
-        
-        /*
-        comando = mensaje_in.substr(0,2);
-
-        switch (com[comando])
-        {
-        case 1: //AR
-        {
-            int size_name = stoi(mensaje_in.substr(2,2));
-            string file_name = mensaje_in.substr(4,size_name);
-            
-            
-            EnviarMensaje("AR", &masteraddr);
-            if (EsperaPorMensaje().substr(0,2) == "OK")
-            {   
-                // Crear Thread para envío de mensajes
-                sockaddr_in* cliente = new sockaddr_in();
-                *cliente = masteraddr;
-                
-                std::thread(EnviarArchivoTxt, file_name, cliente).detach();                
-                //EnviarMensaje(Rdt.PrepararACK(), cliente);              
-            }
-            else
-            {
-                cout << "Error";
-            }
-                        
-            break;
-        }
-
-        case 99: //Error de Checksum
-        {
-            cout << "Error de Recepción Checksum";
-            break;
-        }
-
-        default:
-            break;
-        }
-        */
-
     }
     
     return 0;

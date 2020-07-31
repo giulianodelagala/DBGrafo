@@ -151,7 +151,7 @@ vector<int> ElegirSlaveRelacion(string mensaje, string &new_mensaje)
     int to_size = stoi(mensaje.substr(4+from_size,2));
     string to_name = mensaje.substr(6+from_size, to_size);
 
-    new_mensaje = "CR" + mensaje.substr(4+from_size,2) +
+    new_mensaje = mensaje.substr(4+from_size,2) +
      to_name + mensaje.substr(2,2) + from_name;
 
     slaves.push_back(funHash(from_name));
@@ -220,7 +220,7 @@ int main()
         {"CR", 2}, //Creacion Relacion
         
         {"RN", 3}, //Leer atributos de Nodo 
-        {"RR", 4}, //Leer relacion de nodo en niveles
+        {"RF", 4}, //Leer relacion de nodo en niveles
         
         {"UA", 5}, //actualizacion de atributo nodo
         {"UR", 6}, //actualizacion de relacion CREO Q NO ES NECESARIO
@@ -281,7 +281,10 @@ int main()
             //Responder Consulta
             string mensaje_out = EsperaPorMensaje(slave_pid);
             cout << "\nResultado: " << mensaje_out;
-            EnviarMensaje(mensaje_out, &map_cliente[cliente_pid]);
+            if (mensaje_out == "OK")
+                EnviarMensaje("OK201", &map_cliente[cliente_pid]);
+            else
+                EnviarMensaje("ER400", &map_cliente[cliente_pid]);         
             break;
         }
         case 2: //Creacion Relacion
@@ -296,16 +299,127 @@ int main()
 
             //Relacion Inversa
             cout << "\nEnviando a Slave: " << slaves[1];
-            EnviarMensaje(new_mensaje, &map_slave[slaves[1]]);
+            EnviarMensaje("CR"+new_mensaje, &map_slave[slaves[1]]);
             string mensaje_out_2 = EsperaPorMensaje(slave_pid);
             cout << "\nResult: " << slaves[1] << mensaje_out_2;
 
             //Responder Consulta
             if (mensaje_out_1 == "OK" && mensaje_out_2 == "OK")
-                EnviarMensaje("OK", &map_cliente[cliente_pid]);
+                EnviarMensaje("OK202", &map_cliente[cliente_pid]);
             else
             {
-               EnviarMensaje("ER", &map_cliente[cliente_pid]);
+               EnviarMensaje("ER400", &map_cliente[cliente_pid]);
+            }
+            break;
+        }
+
+        case 3: //Leer atributos de Nodo 
+        {
+            int cualslave = ElegirSlave(mensaje_in); 
+            cout << "\nEnviando a Slave: " << cualslave;
+            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
+
+            //Responder Consulta
+            string mensaje_out = EsperaPorMensaje(slave_pid);
+            cout << "\nResultado: " << mensaje_out;
+            //if (mensaje_out == "OK")
+            EnviarMensaje(mensaje_out, &map_cliente[cliente_pid]);
+            //else
+            //    EnviarMensaje("ER400", &map_cliente[cliente_pid]);         
+            break;
+        }
+
+        case 4: //Leer relacion de nodo
+        {
+            //Un nivel 
+            int cualslave = ElegirSlave(mensaje_in); 
+            cout << "\nEnviando a Slave: " << cualslave;
+            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
+
+            //Responder Consulta
+            string mensaje_out = EsperaPorMensaje(slave_pid);
+            cout << "\nResultado: " << mensaje_out;
+            //if (mensaje_out == "OK")
+            EnviarMensaje(mensaje_out, &map_cliente[cliente_pid]);
+            //else
+            //    EnviarMensaje("ER400", &map_cliente[cliente_pid]);         
+            break;
+        }
+
+        case 5: //actualizacion de atributo nodo
+        {
+            int cualslave = ElegirSlave(mensaje_in); 
+            cout << "\nEnviando a Slave: " << cualslave;
+            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
+
+            //Responder Consulta
+            string mensaje_out = EsperaPorMensaje(slave_pid);
+            cout << "\nResultado: " << mensaje_out;
+            if (mensaje_out == "OK")
+                EnviarMensaje("OK201", &map_cliente[cliente_pid]);
+            else
+                EnviarMensaje("ER400", &map_cliente[cliente_pid]);         
+            break;
+        }
+        
+        case 6: //actualizacion de relacion CREO Q NO ES NECESARIO
+        {
+            break;
+        }
+
+        case 7: //Eliminar nodo
+        {
+            int cualslave = ElegirSlave(mensaje_in); 
+            cout << "\nEnviando a Slave: " << cualslave;
+            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
+
+            //Responder Consulta
+            string mensaje_out = EsperaPorMensaje(slave_pid);
+            cout << "\nResultado: " << mensaje_out;
+            if (mensaje_out == "OK")
+                EnviarMensaje("OK207", &map_cliente[cliente_pid]);
+            else
+                EnviarMensaje("ER400", &map_cliente[cliente_pid]);          
+            break;
+        }
+
+        case 8: //Eliminar atributo de nodo
+        {
+            int cualslave = ElegirSlave(mensaje_in); 
+            cout << "\nEnviando a Slave: " << cualslave;
+            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
+
+            //Responder Consulta
+            string mensaje_out = EsperaPorMensaje(slave_pid);
+            cout << "\nResultado: " << mensaje_out;
+            if (mensaje_out == "OK")
+                EnviarMensaje("OK208", &map_cliente[cliente_pid]);
+            else
+                EnviarMensaje("ER400", &map_cliente[cliente_pid]);          
+            break;
+        }
+        case 9: //Eliminar relacion de nodo
+        {
+            string new_mensaje;
+            vector<int> slaves = ElegirSlaveRelacion(mensaje_in, new_mensaje);
+
+            cout << "\nEnviando a Slave: " << slaves[0];
+            EnviarMensaje(mensaje_in, &map_slave[slaves[0]]);
+            string mensaje_out_1 = EsperaPorMensaje(slave_pid);
+            cout << "\nResult: " << slaves[0] << mensaje_out_1;
+
+            //Relacion Inversa
+            cout << "\nEnviando a Slave: " << slaves[1];
+            EnviarMensaje("DR"+new_mensaje, &map_slave[slaves[1]]);
+            string mensaje_out_2 = EsperaPorMensaje(slave_pid);
+            cout << "\nResult: " << slaves[1] << mensaje_out_2;
+
+            //Responder Consulta
+            if (mensaje_out_1 == "OK" && mensaje_out_2 == "OK")
+                EnviarMensaje("OK209", &map_cliente[cliente_pid]);
+            else
+            {
+               EnviarMensaje("ER400", &map_cliente[cliente_pid]);
             }
             break;
         }

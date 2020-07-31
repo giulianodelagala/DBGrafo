@@ -37,6 +37,7 @@ public:
     bool InsertRelacion(string nombre_from, string nombre_to);
     vector<Atr> ReadAtributosNodo(string nombre_nodo);
     vector<int> GetIDFriends(string nombre_nodo);
+    vector<string> GetNameFriends(string nombre_nodo);
 
     bool UpdateAtributo(string nombre_nodo, string atributo, string valor);
 
@@ -213,6 +214,30 @@ vector<int> DB::GetIDFriends(string nombre_nodo)
     return vec_friends;
 }
 
+vector<string> DB::GetNameFriends(string nombre_nodo)
+{
+    vector<string> vec_friends;
+    string id_nodo = to_string(GetID(nombre_nodo));
+    
+    sqlite3_stmt *stmt;
+    string query = "SELECT * FROM 'RELACION' WHERE ID_NODO_FROM=" + id_nodo +";";
+    //cout << query;
+    const char *sql = query.c_str();
+    if (sqlite3_prepare_v2(connDB, sql , strlen(sql), &stmt, NULL) == SQLITE_OK)
+    {
+        while (sqlite3_step(stmt) == SQLITE_ROW)
+        {
+            string id = id.assign((char*) sqlite3_column_text(stmt, 2));
+            vec_friends.push_back(id);
+        }
+        cout << "successfully query \n";
+    }
+    else
+        cout << "Error execSelect: " << sqlite3_errmsg(connDB) << "\n";
+    sqlite3_finalize(stmt);
+    return vec_friends;
+}
+
 ////////////////////////
 /// UPDATE ///////////
 ////////////////////////
@@ -254,9 +279,9 @@ bool DB::DeleteAtributo(string nombre_nodo, string atributo)
 bool DB::DeleteRelacion(string nombre_from, string nombre_to)
 {
     string id_nodo_from = to_string(GetID(nombre_from));
-    string id_nodo_to = to_string(GetID(nombre_to));
+    //string id_nodo_to = to_string(GetID(nombre_to));
 
-    string query = "DELETE FROM RELACION WHERE ID_NODO_FROM = " + id_nodo_from + " AND ID_NODO_TO = " + id_nodo_to;
+    string query = "DELETE FROM RELACION WHERE ID_NODO_FROM = " + id_nodo_from + " AND ID_NODO_TO = \"" + nombre_to + "\"";
     cout << query;
 
     return exec(query.c_str()); 
