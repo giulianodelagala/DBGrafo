@@ -16,14 +16,17 @@
 #include <iostream>
 #include <sstream> //stringstream
 #include <thread>
+#include <algorithm>
 
 #include "RDT.h"
 #include "manejo_archivos.h"
 
 #define PORT     8080
-#define PORT_SLAVE 6060
-#define PORT_SLAVE2 7070
-#define PORT_SLAVE3 9090
+#define PORT_SLAVE0 9090
+#define PORT_SLAVE1 9191
+#define PORT_SLAVE2 9292
+#define PORT_SLAVE3 9393
+
 #define MAXLINE 512
 
 using std::cout; using std::cin;
@@ -34,8 +37,8 @@ using std::map;
 struct sockaddr_in servaddr, cliaddr; 
 int sockfd; 
 char buffer[MAXLINE]; 
-struct sockaddr_in  slaveaddr, slaveaddr2, slaveaddr3;
-int NSLAVE = 3;
+struct sockaddr_in slaveaddr0, slaveaddr1, slaveaddr2, slaveaddr3;
+int NSLAVE = 4;
 //unsigned int len;
 
 /////////////////
@@ -159,7 +162,19 @@ vector<int> ElegirSlaveRelacion(string mensaje, string &new_mensaje)
     return slaves;
 }
 
+vector<string> Cadena2Vector(string mensaje)
+{
+    vector<string> result;
+    std::stringstream ss(mensaje);
 
+    while( ss.good() )
+    {
+        string substr;
+        getline( ss, substr, ',' );
+        result.push_back( substr );
+    }
+    return result;
+}
 
 /*
 void ACKTimeout()
@@ -173,14 +188,25 @@ void ACKTimeout()
 */
 int main()
 {
-    //Slave//
-    struct hostent *slave;
-    slave = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
-    memset(&slaveaddr, 0, sizeof(slaveaddr));
+
+    //Slave0//
+    struct hostent *slave0;
+    slave0 = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
+    memset(&slaveaddr0, 0, sizeof(slaveaddr0));
     // Filling slave information
-    slaveaddr.sin_family = AF_INET;
-    slaveaddr.sin_port = htons(PORT_SLAVE);
-    slaveaddr.sin_addr = *((struct in_addr *)slave->h_addr);
+    slaveaddr0.sin_family = AF_INET;
+    slaveaddr0.sin_port = htons(PORT_SLAVE0);
+    slaveaddr0.sin_addr = *((struct in_addr *)slave0->h_addr);
+    ////////////////
+
+    //Slave1//
+    struct hostent *slave1;
+    slave1 = (struct hostent *)gethostbyname((char *)"127.0.0.1"); //"51.15.220.108"
+    memset(&slaveaddr1, 0, sizeof(slaveaddr1));
+    // Filling slave information
+    slaveaddr1.sin_family = AF_INET;
+    slaveaddr1.sin_port = htons(PORT_SLAVE1);
+    slaveaddr1.sin_addr = *((struct in_addr *)slave1->h_addr);
     ////////////////
 
     //Slave2//
@@ -203,11 +229,14 @@ int main()
     slaveaddr3.sin_addr = *((struct in_addr *)slave3->h_addr);
     ////////////////
 
+    
+
 
     std::map<int,sockaddr_in> map_slave{
-        {0, slaveaddr},
-        {1, slaveaddr2},
-        {2, slaveaddr3}
+        {0, slaveaddr0},
+        {1, slaveaddr1},
+        {2, slaveaddr2},
+        {3, slaveaddr3}
     };
 
     std::map<int,sockaddr_in> map_cliente;
@@ -258,8 +287,6 @@ int main()
     //len = sizeof(cliaddr);
 
     //std::thread(ACKTimeout).detach();
-    //MONOCLIENTE MEJORAR
-
 
     for(;;)
     {
@@ -331,18 +358,112 @@ int main()
 
         case 4: //Leer relacion de nodo
         {
-            //Un nivel 
+            //Recuperacion de parametros
+            string s_name = mensaje_in.substr(2,2);
+            int size_name = stoi(s_name);
+            string name = mensaje_in.substr(4, size_name);
+            string mensaje_out = "";
+            int niveles = stoi(mensaje_in.substr(4+size_name,1));
+            bool flag = stoi(mensaje_in.substr(5+size_name,1));
+
+            //Vector de Nodos por nivel
+            vector<vector<string>> NODOS;
+
+            //Consulta de Primer Nivel
             int cualslave = ElegirSlave(mensaje_in); 
             cout << "\nEnviando a Slave: " << cualslave;
-            EnviarMensaje(mensaje_in, &map_slave[cualslave]);
+            EnviarMensaje("RF" + s_name + name, &map_slave[cualslave]);
+            //Recuperando amigos
+            string friends = EsperaPorMensaje(slave_pid);
+            int size_friends = stoi(friends.substr(2,3));
+            cout << "\nSIZE: " << size_friends;
+            friends = friends.substr(5, size_friends);
+            
+            cout << "\nFRIENDS: " << friends << "\n";
+            vector<string> amigos = Cadena2Vector(friends);
+            NODOS.push_back(amigos);
 
-            //Responder Consulta
-            string mensaje_out = EsperaPorMensaje(slave_pid);
-            cout << "\nResultado: " << mensaje_out;
-            //if (mensaje_out == "OK")
+            for (int i = 1; i < niveles; ++i)
+            {
+                //Creacion de otros niveles
+                //Revisar vector anterior
+                vector<string> auxiliar;
+                for (auto nodo: NODOS[i-1])
+                {
+                    cualslave = funHash(nodo);
+                    EnviarMensaje("RF" + Rdt.PadZeros(nodo.length(), 2) + nodo, &map_slave[cualslave]);
+                    friends = EsperaPorMensaje(slave_pid);
+                    size_friends = stoi(friends.substr(2,3));
+                    friends = friends.substr(5, size_friends);
+                    cout << "\nFRIENDS: " << friends << "\n";
+
+
+                    vector<string> new_friends = Cadena2Vector(friends);
+                    //Buscar si nuevos nodos ya fueron visitados
+                    for (auto new_nodo: new_friends)
+                    {
+                        bool found = false;
+                        for (int j = 0; j < i; ++j)
+                        {
+                            //Busqueda en niveles anteriores
+                            std::vector<string>::iterator p = find( NODOS[j].begin(), NODOS[j].end(), new_nodo) ;
+                            if (p != NODOS[j].end() )
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found)
+                        {   
+                            //Busqueda en vector auxiliar
+                            std::vector<string>::iterator p = find( auxiliar.begin(), auxiliar.end(), new_nodo) ;
+                            if (p == auxiliar.end() )
+                            {
+                                auxiliar.push_back(new_nodo);
+                            }
+                        }
+                    }  
+                }
+                NODOS.push_back(auxiliar);
+            }
+
+            //Creacion de Mensaje
+            string rpta = "";
+            for (int i = 0; i < niveles; ++i)
+            {
+                rpta += "Nivel " + std::to_string(i) + " :";
+                for (auto nodo: NODOS[i])
+                {
+                    if (flag)
+                    {
+                        //Incluir atributos
+                        cout << "\nRecuperando Atributos";
+                        
+                        //Consultar atributo de Nodo
+                        string query = "RN" + Rdt.PadZeros(nodo.length(),2) + nodo;
+                        int cualslave = ElegirSlave(query); 
+                        cout << "\nEnviando a Slave: " << cualslave;
+                        EnviarMensaje(query, &map_slave[cualslave]);
+
+                        string rpta_atrib = EsperaPorMensaje(slave_pid);
+                        cout << rpta_atrib;
+                        int size_rpta_atrib = stoi(rpta_atrib.substr(2,3));
+                        rpta_atrib = rpta_atrib.substr(5, size_rpta_atrib);
+
+                        //mensaje_out += " " + nodo + " " + rpta;              
+                        rpta += " " + nodo + " " + rpta_atrib + ",";
+                    }
+                    else
+                    {
+                         rpta += nodo + ",";
+                    }           
+                }
+            }
+
+            mensaje_out = "RF" + Rdt.PadZeros(rpta.length(), 3) + rpta;            
+            
             EnviarMensaje(mensaje_out, &map_cliente[cliente_pid]);
-            //else
-            //    EnviarMensaje("ER400", &map_cliente[cliente_pid]);         
+            
             break;
         }
 

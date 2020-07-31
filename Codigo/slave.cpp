@@ -110,6 +110,7 @@ string LeerAmigos (string mensaje)
     for(int j = 0; j < id_nodos.size(); j++){
         msg += id_nodos[j] + ",";
     }
+    msg = msg.substr(0, msg.length()-1);
     msg = "RF" + Rdt.PadZeros(msg.length(), 3) + msg;
     cout << msg;
     return msg;
@@ -270,12 +271,6 @@ string create_json(vector <string> c,vector<string> t){
     return result;
 }
 
-void PrepararRespuesta()
-{
-
-}
-
-
 void EnviarPaquete(string cadena, sockaddr_in* cliente);
 
 void EnviarMensaje(string mensaje, sockaddr_in* cliente)
@@ -363,22 +358,31 @@ int main(int argc, char* argv[])
     
     Sql.Conexion(db_file);
     
+    std::map<int,int> map_puertos{
+        {0,9090},
+        {1,9191},
+        {2,9292},
+        {3,9393}
+    };
+    PORT_SLAVE = map_puertos[PORT_];
+
+/*
     switch (PORT_)
     {
-    case 1:
-        PORT_SLAVE = 6060;
-        break;
-    case 2:
-        PORT_SLAVE = 7070;
-        break;
-    case 3:
+    case 0:
         PORT_SLAVE = 9090;
         break;
-    
-    default:
+    case 1:
+        PORT_SLAVE = 9191;
+        break;
+    case 2:
+        PORT_SLAVE = 9292;
+        break;
+    case 3:
+        PORT_SLAVE = 9393;
         break;
     }
-
+*/
     int n;
     string mensaje_in, comando;
 
